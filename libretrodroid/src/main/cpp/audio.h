@@ -18,6 +18,7 @@
 #ifndef LIBRETRODROID_AUDIO_H
 #define LIBRETRODROID_AUDIO_H
 
+#include <cstring>
 #include <array>
 #include <unistd.h>
 #include <oboe/Oboe.h>

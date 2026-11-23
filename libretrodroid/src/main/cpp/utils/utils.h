@@ -18,6 +18,9 @@
 #ifndef LIBRETRODROID_UTILS_H
 #define LIBRETRODROID_UTILS_H
 
+#include <cstddef>
+#include <string>
+
 namespace libretrodroid {
 
 class Utils {

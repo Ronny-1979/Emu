@@ -18,6 +18,7 @@
 #ifndef LIBRETRODROID_LIBRETRODROIDEXCEPTION_H
 #define LIBRETRODROID_LIBRETRODROIDEXCEPTION_H
 
+#include <stdexcept>
 #include <string>
 
 namespace libretrodroid {
