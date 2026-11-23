@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Gamepad-Körper -->
+    <path
+        android:fillColor="#F2A33A"
+        android:pathData="M30,40 L78,40 Q92,40 94,56 L96,70 Q97,80 88,80 Q80,80 76,72 L72,66 L36,66 L32,72 Q28,80 20,80 Q11,80 12,70 L14,56 Q16,40 30,40 Z" />
+    <!-- Steuerkreuz -->
+    <path
+        android:fillColor="#12161B"
+        android:pathData="M30,48 L34,48 L34,52 L38,52 L38,56 L34,56 L34,60 L30,60 L30,56 L26,56 L26,52 L30,52 Z" />
+    <!-- Tasten -->
+    <path
+        android:fillColor="#12161B"
+        android:pathData="M70,54 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0 M78,50 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0 M78,58 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0" />
+</vector>

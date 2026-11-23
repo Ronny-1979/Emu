@@ -1,0 +1,71 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'de.ronny.poloretro'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'de.ronny.poloretro'
+        minSdk 26
+        targetSdk 33
+        // Das Radio ist ein Snapdragon 665 (arm64). Die Cores liegen nur als arm64 vor.
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+        versionCode 15
+        versionName '0.3.3'
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    packaging {
+        jniLibs {
+            // Die Cores werden beim Installieren entpackt und per Namen geladen (wie bei Lemuroid).
+            useLegacyPackaging = true
+            keepDebugSymbols += ['**/*_libretro_android.so']
+        }
+    }
+
+    // Nur für den GitHub-Build: Ist DEBUG_KEYSTORE_PATH gesetzt, wird genau diese Debug-Schlüsseldatei
+    // zum Signieren benutzt. Ohne die Variable (Android Studio am PC) gilt der Standard-Debug-Schlüssel.
+    signingConfigs {
+        debug {
+            def ciKeystore = System.getenv('DEBUG_KEYSTORE_PATH')
+            if (ciKeystore) {
+                storeFile file(ciKeystore)
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}
+
+dependencies {
+    // Emulator-Kern-Anbindung (GLRetroView): eigene Kopie von LibretroDroid mit Run-Ahead und Bildverzögerung.
+    implementation project(':libretrodroid')
+    // ComponentActivity liefert den LifecycleOwner, den GLRetroView braucht.
+    implementation 'androidx.activity:activity:1.9.3'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.7'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
+}
