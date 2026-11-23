@@ -100,6 +100,15 @@ class CoverDownloader(private val paths: AppPaths) {
         return Result(found, notFound, errors, alreadyThere, wasCancelled)
     }
 
+    private var netErrorsLogged = 0
+
+    /** Schreibt die genaue Fehlerart ins Protokoll (die ersten paar je Lauf), damit man die Ursache sieht. */
+    private fun logNetError(address: String, e: Exception) {
+        if (netErrorsLogged++ >= 4) return
+        val cause = e.cause?.let { " / Ursache: ${it.javaClass.simpleName}: ${it.message}" } ?: ""
+        DiagLog.add("Titelbild-Netzfehler: ${e.javaClass.simpleName}: ${e.message}$cause (${address.substringBefore('?').take(80)})")
+    }
+
     private class Resp(val code: Int, val bytes: ByteArray?)
 
     private fun get(address: String, maxBytes: Int): Resp {
@@ -119,9 +128,11 @@ class CoverDownloader(private val paths: AppPaths) {
             } else {
                 Resp(code, null)
             }
-        } catch (_: IOException) {
+        } catch (e: IOException) {
+            logNetError(address, e)
             Resp(-1, null)
-        } catch (_: RuntimeException) {
+        } catch (e: RuntimeException) {
+            logNetError(address, e)
             Resp(-1, null)
         } finally {
             conn?.disconnect()

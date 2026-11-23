@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.3.5
+- Titelbilder: Bei einem Netzfehler steht im Protokoll jetzt die genaue Fehlerart (z. B. Zertifikat, Namensauflösung, Zeitüberschreitung), damit sich die Ursache finden lässt, wenn keine Bilder laden.
+
 ## 0.3.4
 - Neu gebaut mit eigenem Signaturschlüssel (Secret DEBUG_KEYSTORE_BASE64), damit sich die APK über die bestehende Installation legen lässt. Sonst keine Änderung.
 
