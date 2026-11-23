@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.3.4
+- Neu gebaut mit eigenem Signaturschlüssel (Secret DEBUG_KEYSTORE_BASE64), damit sich die APK über die bestehende Installation legen lässt. Sonst keine Änderung.
+
 ## 0.3.3
 - Protokoll lässt sich teilen: Einstellungen → "Protokoll teilen / per Mail senden" (auch im Protokoll-Fenster als "Teilen / Mail"). Öffnet die Android-Teilen-Auswahl, z. B. für eine Mail-App. Der Text steckt direkt in der Nachricht.
 
