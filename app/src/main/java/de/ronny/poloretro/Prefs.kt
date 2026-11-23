@@ -71,10 +71,6 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("run_ahead", false)
         set(v) = sp.edit().putBoolean("run_ahead", v).apply()
 
-    /** Automatische Bildverzögerung: Tasten werden kurz vor dem Bildtakt abgefragt. */
-    var autoFrameDelay: Boolean
-        get() = sp.getBoolean("auto_frame_delay", false)
-        set(v) = sp.edit().putBoolean("auto_frame_delay", v).apply()
 
     /** Bilder pro Sekunde im Spiel einblenden (zur Fehlersuche). */
     var showFps: Boolean

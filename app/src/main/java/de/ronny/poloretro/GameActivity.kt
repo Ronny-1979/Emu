@@ -135,7 +135,6 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
         retroView = GLRetroView(this, data)
         // Nur 2D-Konsolen: Der N64-Kern zeichnet mit der Grafikkarte, dort geht Run-Ahead nicht.
         retroView.runAhead = prefs.runAhead && system != RetroSystem.N64
-        retroView.autoFrameDelay = prefs.autoFrameDelay
         lifecycle.addObserver(retroView)
 
         val root = FrameLayout(this).apply { setBackgroundColor(0xFF000000.toInt()) }
@@ -281,14 +280,14 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
 
     private suspend fun onFirstFrame() {
         started = true
-        if (prefs.runAhead || prefs.autoFrameDelay) {
+        if (prefs.runAhead) {
             val ra = when {
                 !prefs.runAhead -> "aus"
                 system == RetroSystem.N64 -> "für N64 nicht möglich"
                 retroView.isRunAheadActive() -> "aktiv"
                 else -> "nicht möglich (dieser Kern kann keine Zustände sichern)"
             }
-            DiagLog.add("Eingabeverzögerung: Run-Ahead $ra, Bildverzögerung ${if (prefs.autoFrameDelay) "an" else "aus"}")
+            DiagLog.add("Eingabeverzögerung: Run-Ahead $ra")
         }
         applyAllCheats()
         applyAudio()

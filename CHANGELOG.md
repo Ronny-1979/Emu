@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.3.6
+- Automatische Bildverzögerung aus den Einstellungen entfernt. Run-Ahead allein reicht (auf dem Radio bei SNES ohne spürbare Verzögerung). Der Unterbau dafür bleibt unverändert im Hintergrund, wird aber nicht mehr eingeschaltet.
+
 ## 0.3.5
 - Titelbilder: Bei einem Netzfehler steht im Protokoll jetzt die genaue Fehlerart (z. B. Zertifikat, Namensauflösung, Zeitüberschreitung), damit sich die Ursache finden lässt, wenn keine Bilder laden.
 

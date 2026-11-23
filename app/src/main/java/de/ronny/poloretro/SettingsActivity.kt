@@ -58,7 +58,6 @@ class SettingsActivity : Activity() {
 
         section("Eingabeverzögerung (gilt ab dem nächsten Spielstart)")
         toggle("Run-Ahead: Eingaben wirken ein Bild früher (nicht N64)", prefs.runAhead) { prefs.runAhead = it }
-        toggle("Automatische Bildverzögerung: Tasten später abfragen", prefs.autoFrameDelay) { prefs.autoFrameDelay = it }
 
         section("Nintendo 64 (gilt ab dem nächsten Spielstart)")
         choice("Auflösung", arrayOf("640x480 (schnell)", "960x720", "1280x960 (am schärfsten, braucht viel Leistung)"), prefs.n64Resolution) { prefs.n64Resolution = it }
