@@ -190,7 +190,12 @@ fun main() {
         CoverNames.url(RetroSystem.SNES, CoverNames.BOXART, "Super Mario World (USA)"),
         "https://thumbnails.libretro.com/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/Named_Boxarts/Super%20Mario%20World%20%28USA%29.png",
     )
-    eq("cover Kandidaten", CoverNames.candidates(RetroSystem.GBA, "A (E) [!].gba").size, 3)
+    eq("cover Kandidaten", CoverNames.candidates(RetroSystem.GBA, "A (E) [!].gba").size, 6)
+    eq(
+        "cover URL sparsam",
+        CoverNames.urlLight(RetroSystem.SNES, CoverNames.BOXART, "Yoshi's Island (Europe) (En,Fr,De)"),
+        "https://thumbnails.libretro.com/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/Named_Boxarts/Yoshi's%20Island%20(Europe)%20(En,Fr,De).png",
+    )
     check("cover Titelbildschirm zuletzt", CoverNames.candidates(RetroSystem.GBA, "A (E).gba").last().contains("Named_Titles"))
     check("jede Konsole hat Thumb-Ordner", RetroSystem.values().all { it.thumbFolder.isNotBlank() && !it.thumbFolder.contains('/') })
 

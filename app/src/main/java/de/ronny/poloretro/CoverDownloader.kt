@@ -101,6 +101,7 @@ class CoverDownloader(private val paths: AppPaths) {
     }
 
     private var netErrorsLogged = 0
+    private var notFoundLogged = 0
 
     /** Schreibt die genaue Fehlerart ins Protokoll (die ersten paar je Lauf), damit man die Ursache sieht. */
     private fun logNetError(address: String, e: Exception) {
@@ -142,7 +143,10 @@ class CoverDownloader(private val paths: AppPaths) {
     private fun fetch(address: String, target: File): Fetch {
         val r = get(address, 3_000_000)
         if (r.code == -1) { DiagLog.add("Titelbild: Netzfehler bei $address"); return Fetch.ERROR }
-        if (r.code == 404) return Fetch.NOT_FOUND
+        if (r.code == 404) {
+            if (notFoundLogged++ < 3) DiagLog.add("Titelbild: HTTP 404 bei $address")
+            return Fetch.NOT_FOUND
+        }
         if (r.code != 200) { DiagLog.add("Titelbild: HTTP ${r.code} bei $address"); return Fetch.ERROR }
         val bytes = r.bytes
         if (bytes == null || bytes.size < 100 || !isPng(bytes)) {
@@ -172,16 +176,33 @@ class CoverDownloader(private val paths: AppPaths) {
             // neu laden
         }
         val dirUrl = "${CoverNames.SERVER}/" + java.net.URLEncoder.encode(system.thumbFolder, "UTF-8").replace("+", "%20") + "/${CoverNames.BOXART}/"
-        val r = get(dirUrl, 12_000_000)
-        val html = r.bytes?.toString(Charsets.UTF_8)
-        if (html == null) {
-            DiagLog.add("Titelbild: Namensliste ${system.shortLabel} nicht ladbar (HTTP ${r.code})")
+        // Der Server bietet je Ordner eine Datei ".index" mit allen Namen (so lädt auch RetroArch); die Ordnerseite
+        // selbst liefert inzwischen 404. Beides wird probiert.
+        var text: String? = null
+        var lastCode = 0
+        for (u in listOf(dirUrl + ".index", dirUrl)) {
+            val r = get(u, 12_000_000)
+            lastCode = r.code
+            val t = r.bytes?.toString(Charsets.UTF_8)
+            if (t != null && t.contains(".png", ignoreCase = true)) { text = t; break }
+            DiagLog.add("Titelbild: Namensliste ${system.shortLabel} bei \"${u.substringAfterLast('/').ifEmpty { "Ordnerseite" }}\" nicht brauchbar (HTTP ${r.code}${if (t != null) ", ${t.length} Zeichen, Anfang: ${t.take(80).replace('\n', ' ')}" else ""})")
+        }
+        if (text == null) {
+            DiagLog.add("Titelbild: Namensliste ${system.shortLabel} nicht ladbar (HTTP $lastCode)")
             return emptyList()
         }
-        val names = Regex("href=\"([^\"]+?)\\.png\"", RegexOption.IGNORE_CASE).findAll(html)
+        val html: String = text
+        val fromLinks = Regex("href=\"([^\"]+?)\\.png\"", RegexOption.IGNORE_CASE).findAll(html)
             .map { java.net.URLDecoder.decode(it.groupValues[1].replace("+", "%2B"), "UTF-8") }
             .filter { !it.contains('/') }
             .toList()
+        // Einfache Textliste: ein Name je Zeile (mit oder ohne Endung), ggf. mit weiteren Spalten nach einem Tabulator.
+        val names = fromLinks.ifEmpty {
+            html.lineSequence().map { it.substringBefore('\t').trim() }
+                .filter { it.endsWith(".png", ignoreCase = true) }
+                .map { it.substringBeforeLast('.').substringAfterLast('/') }
+                .toList()
+        }
         DiagLog.add("Titelbild: Namensliste ${system.shortLabel}: ${names.size} Einträge")
         if (names.isNotEmpty()) {
             try { cache.writeText(names.joinToString("\n")) } catch (_: Exception) { /* egal */ }

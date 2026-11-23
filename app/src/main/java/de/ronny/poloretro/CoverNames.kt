@@ -23,16 +23,30 @@ object CoverNames {
 
     private fun enc(s: String): String = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
 
+    /** Wie [enc], lässt aber Klammern, Komma, Apostroph und Ausrufezeichen unverschlüsselt (so schreibt es auch RetroArch). */
+    private fun encLight(s: String): String = enc(s)
+        .replace("%28", "(").replace("%29", ")").replace("%27", "'").replace("%2C", ",").replace("%21", "!")
+
     fun url(system: RetroSystem, kind: String, name: String): String =
         "$SERVER/${enc(system.thumbFolder)}/$kind/${enc(fileName(name))}.png"
+
+    /** Gleiche Adresse mit sparsamer Verschlüsselung; manche Server mögen %28/%29 nicht. */
+    fun urlLight(system: RetroSystem, kind: String, name: String): String =
+        "$SERVER/${enc(system.thumbFolder)}/$kind/${encLight(fileName(name))}.png"
 
     /** Alle Adressen, die für ein Spiel probiert werden: Titelbild-Schachtel in allen Schreibweisen, dann Titelbildschirm. */
     fun candidates(system: RetroSystem, romFileName: String): List<String> {
         val names = variants(romFileName)
         val out = ArrayList<String>()
-        for (n in names) out.add(url(system, BOXART, n))
-        names.firstOrNull()?.let { out.add(url(system, TITLE, it)) }
-        return out
+        for (n in names) {
+            out.add(url(system, BOXART, n))
+            out.add(urlLight(system, BOXART, n))
+        }
+        names.firstOrNull()?.let {
+            out.add(url(system, TITLE, it))
+            out.add(urlLight(system, TITLE, it))
+        }
+        return out.distinct()
     }
 
     // ------------------------------------------------------------ Unscharfe Suche in der Serverliste

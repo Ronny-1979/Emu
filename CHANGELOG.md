@@ -1,5 +1,10 @@
 # Änderungen
 
+## 0.3.7
+- Titelbilder: Der Server liefert die Ordnerliste nicht mehr als Webseite (404). Die Namensliste wird jetzt zuerst über die Datei ".index" geholt, wie es RetroArch macht, und nur zur Not über die Ordnerseite.
+- Bilder werden zusätzlich mit sparsam verschlüsselten Adressen versucht (Klammern, Komma und Apostroph unverschlüsselt).
+- Im Protokoll stehen jetzt die ersten 404-Adressen und der Anfang der Antwort bei einer unbrauchbaren Namensliste, damit sich die Ursache erkennen lässt.
+
 ## 0.3.6
 - Automatische Bildverzögerung aus den Einstellungen entfernt. Run-Ahead allein reicht (auf dem Radio bei SNES ohne spürbare Verzögerung). Der Unterbau dafür bleibt unverändert im Hintergrund, wird aber nicht mehr eingeschaltet.
 
