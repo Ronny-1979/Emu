@@ -140,8 +140,24 @@ class CoverDownloader(private val paths: AppPaths) {
         }
     }
 
+    /** RetroArch fragt laut Dokumentation "http://thumbnails.libretro.com" ab. Antwortet https mit 404, wird einmal http probiert. */
+    private var useHttp = false
+    private var httpProbes = 0
+
     private fun fetch(address: String, target: File): Fetch {
-        val r = get(address, 3_000_000)
+        var addr = address
+        if (useHttp && addr.startsWith("https://")) addr = "http://" + addr.removePrefix("https://")
+        var r = get(addr, 3_000_000)
+        if (r.code == 404 && addr.startsWith("https://") && httpProbes < 2) {
+            httpProbes++
+            val alt = get("http://" + addr.removePrefix("https://"), 3_000_000)
+            DiagLog.add("Titelbild: https lieferte 404, http-Probe: HTTP ${alt.code}")
+            if (alt.code == 200) { useHttp = true; r = alt; addr = "http://" + addr.removePrefix("https://") }
+        }
+        return handle(addr, r, target)
+    }
+
+    private fun handle(address: String, r: Resp, target: File): Fetch {
         if (r.code == -1) { DiagLog.add("Titelbild: Netzfehler bei $address"); return Fetch.ERROR }
         if (r.code == 404) {
             if (notFoundLogged++ < 3) DiagLog.add("Titelbild: HTTP 404 bei $address")

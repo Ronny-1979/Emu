@@ -7,6 +7,7 @@ object CoverNames {
     const val SERVER = "https://thumbnails.libretro.com"
     const val BOXART = "Named_Boxarts"
     const val TITLE = "Named_Titles"
+    const val SNAP = "Named_Snaps"
 
     private val FORBIDDEN = Regex("[&*/:`<>?\\\\|\"]")
 
@@ -42,9 +43,11 @@ object CoverNames {
             out.add(url(system, BOXART, n))
             out.add(urlLight(system, BOXART, n))
         }
+        // Wie RetroArch: Schachtel, dann Titelbildschirm, dann Spielszene.
         names.firstOrNull()?.let {
             out.add(url(system, TITLE, it))
             out.add(urlLight(system, TITLE, it))
+            out.add(url(system, SNAP, it))
         }
         return out.distinct()
     }

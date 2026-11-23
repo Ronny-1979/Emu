@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.3.8
+- Titelbilder nach dem Vorbild von RetroArch: zusätzlich die Spielszene (Named_Snaps) als letzter Ausweg, und bei einer 404-Antwort von https wird einmal http probiert (RetroArch nutzt laut Dokumentation http://thumbnails.libretro.com). Das Ergebnis steht im Protokoll.
+
 ## 0.3.7
 - Titelbilder: Der Server liefert die Ordnerliste nicht mehr als Webseite (404). Die Namensliste wird jetzt zuerst über die Datei ".index" geholt, wie es RetroArch macht, und nur zur Not über die Ordnerseite.
 - Bilder werden zusätzlich mit sparsam verschlüsselten Adressen versucht (Klammern, Komma und Apostroph unverschlüsselt).
