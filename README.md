@@ -1,4 +1,4 @@
-# PoloRetro
+# Zockpit (früher PoloRetro)
 
 Eigenständige Android-App für SNES, Sega Mega Drive, Nintendo 64, NES, Game Boy (Color/Advance), Master System und Game Gear, gebaut für ein Android-Autoradio
 (Snapdragon 665, Android 13, arm64, 1280x720 quer, ohne Root). Paket: `de.ronny.poloretro`.

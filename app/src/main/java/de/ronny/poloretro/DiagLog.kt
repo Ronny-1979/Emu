@@ -28,7 +28,7 @@ object DiagLog {
             // Protokoll ist nur Beiwerk.
         }
         file = f
-        add("--- PoloRetro ${BuildConfig.VERSION_NAME} gestartet ---")
+        add("--- Zockpit ${BuildConfig.VERSION_NAME} gestartet ---")
     }
 
     @Synchronized

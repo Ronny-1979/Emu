@@ -32,7 +32,14 @@ class MainActivity : Activity() {
     private lateinit var listView: ListView
     private lateinit var emptyView: TextView
     private lateinit var search: EditText
-    private val tabButtons = ArrayList<Button>()
+    private val navItems = ArrayList<Pair<Button, () -> Boolean>>()
+    private val systemButtons = LinkedHashMap<RetroSystem, Button>()
+    private lateinit var resumeCard: LinearLayout
+    private lateinit var resumeCover: android.widget.ImageView
+    private lateinit var resumeTitle: TextView
+    private lateinit var resumeNote: TextView
+    private lateinit var listHeader: TextView
+    private var resumeGame: Game? = null
     private val adapter = GameAdapter()
 
     private var allGames: List<Game> = emptyList()
@@ -64,43 +71,62 @@ class MainActivity : Activity() {
     // ---------------------------------------------------------------- Oberfläche
 
     private fun buildUi(): View {
-        val pad = Ui.dp(this, 16)
-        val root = Ui.vertical(this).apply {
-            setBackgroundColor(Ui.BG)
-            setPadding(pad, Ui.dp(this@MainActivity, 10), pad, pad)
+        val ctx = this
+        val root = Ui.vertical(ctx).apply { setBackgroundColor(Ui.BG) }
+        val body = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
+
+        // ---- Seitenleiste
+        val side = Ui.vertical(ctx).apply {
+            setBackgroundColor(0xFF0E1216.toInt())
+            setPadding(Ui.dp(ctx, 14), Ui.dp(ctx, 16), Ui.dp(ctx, 14), Ui.dp(ctx, 8))
         }
-
-        val header = Ui.horizontal(this)
-        header.addView(Ui.label(this, "PoloRetro", 28f, Ui.ACCENT, true), Ui.weight())
-        header.addView(Ui.button(this, "USB-Import", onClick = { startImport() }))
-        header.addView(Ui.spacer(this, 8))
-        header.addView(Ui.button(this, "Steuerung", onClick = { openController() }))
-        header.addView(Ui.spacer(this, 8))
-        header.addView(Ui.button(this, "Einstellungen", onClick = {
-            startActivity(Intent(this, SettingsActivity::class.java))
-        }))
-        root.addView(header)
-
-        val tabs = Ui.horizontal(this)
-        val names = listOf("Alle", "Zuletzt", "Favoriten", "Konsole")
-        for ((i, n) in names.withIndex()) {
-            val b = Ui.button(this, n, sizeSp = 15f, onClick = { selectTab(i) })
-            tabButtons.add(b)
-            val lp = Ui.weight()
-            lp.topMargin = Ui.dp(this, 10)
-            if (i > 0) lp.leftMargin = Ui.dp(this, 6)
-            tabs.addView(b, lp)
+        val logoRow = Ui.horizontal(ctx).apply { setPadding(Ui.dp(ctx, 6), 0, 0, Ui.dp(ctx, 12)) }
+        val logo = Ui.label(ctx, "Z", 24f, Ui.BG, true).apply {
+            gravity = Gravity.CENTER
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Ui.ACCENT)
+                cornerRadius = Ui.dp(ctx, 12).toFloat()
+            }
         }
-        root.addView(tabs)
+        logoRow.addView(logo, LinearLayout.LayoutParams(Ui.dp(ctx, 42), Ui.dp(ctx, 42)))
+        logoRow.addView(Ui.label(ctx, "Zockpit", 26f, Ui.TEXT, true).apply { setPadding(Ui.dp(ctx, 12), 0, 0, 0) })
+        side.addView(logoRow)
 
-        search = EditText(this).apply {
-            hint = "Suchen ..."
+        side.addView(navButton("Alle Spiele", { tab == 0 }, { selectTab(0) }))
+        side.addView(navButton("Zuletzt", { tab == 1 }, { selectTab(1) }))
+        side.addView(navButton("Favoriten", { tab == 2 }, { selectTab(2) }))
+        side.addView(Ui.label(ctx, "KONSOLEN", 12f, Ui.MUTED, true).apply {
+            setPadding(Ui.dp(ctx, 10), Ui.dp(ctx, 14), 0, Ui.dp(ctx, 4))
+        })
+        val consoles = Ui.vertical(ctx)
+        for (sys in RetroSystem.values()) {
+            val b = navButton(sys.label, { tab == 3 && systemFilter == sys }, { selectSystem(sys) }, small = true)
+            b.visibility = View.GONE
+            systemButtons[sys] = b
+            consoles.addView(b)
+        }
+        val scroll = android.widget.ScrollView(ctx).apply {
+            isVerticalScrollBarEnabled = false
+            addView(consoles)
+        }
+        side.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        body.addView(side, LinearLayout.LayoutParams(Ui.dp(ctx, 240), ViewGroup.LayoutParams.MATCH_PARENT))
+
+        // ---- Hauptbereich
+        val main = Ui.vertical(ctx).apply {
+            setPadding(Ui.dp(ctx, 28), Ui.dp(ctx, 16), Ui.dp(ctx, 28), Ui.dp(ctx, 4))
+        }
+        val top = Ui.horizontal(ctx)
+        search = EditText(ctx).apply {
+            hint = "Spiel suchen ..."
             setHintTextColor(Ui.MUTED)
             setTextColor(Ui.TEXT)
+            textSize = 17f
             inputType = InputType.TYPE_CLASS_TEXT
             isSingleLine = true
-            background = Ui.focusBackground(this@MainActivity, Ui.SURFACE, 10)
-            setPadding(Ui.dp(this@MainActivity, 14), Ui.dp(this@MainActivity, 8), Ui.dp(this@MainActivity, 14), Ui.dp(this@MainActivity, 8))
+            background = Ui.focusBackground(ctx, Ui.SURFACE, 26)
+            setPadding(Ui.dp(ctx, 20), Ui.dp(ctx, 8), Ui.dp(ctx, 20), Ui.dp(ctx, 8))
+            minHeight = Ui.dp(ctx, 52)
             addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -110,13 +136,73 @@ class MainActivity : Activity() {
                 }
             })
         }
-        val searchLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        searchLp.topMargin = Ui.dp(this, 10)
-        root.addView(search, searchLp)
+        top.addView(search, Ui.weight())
+        for ((text, action) in listOf<Pair<String, () -> Unit>>(
+            "USB-Import" to { startImport() },
+            "Steuerung" to { openController() },
+            "Einstellungen" to { startActivity(Intent(this, SettingsActivity::class.java)) },
+        )) {
+            top.addView(Ui.spacer(ctx, 8))
+            top.addView(Ui.button(ctx, text, sizeSp = 15f, onClick = action).apply {
+                background = Ui.focusBackground(ctx, Ui.SURFACE, 26)
+            })
+        }
+        main.addView(top)
 
-        listView = ListView(this).apply {
+        // ---- Weiterspielen
+        resumeCard = Ui.horizontal(ctx).apply {
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Ui.SURFACE)
+                cornerRadius = Ui.dp(ctx, 24).toFloat()
+            }
+            setPadding(Ui.dp(ctx, 14), Ui.dp(ctx, 14), Ui.dp(ctx, 20), Ui.dp(ctx, 14))
+            visibility = View.GONE
+        }
+        resumeCover = android.widget.ImageView(ctx).apply {
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(0xFF0E1216.toInt())
+                cornerRadius = Ui.dp(ctx, 14).toFloat()
+            }
+            setPadding(Ui.dp(ctx, 6), Ui.dp(ctx, 6), Ui.dp(ctx, 6), Ui.dp(ctx, 6))
+        }
+        resumeCard.addView(resumeCover, LinearLayout.LayoutParams(Ui.dp(ctx, 170), Ui.dp(ctx, 120)))
+        val rtext = Ui.vertical(ctx)
+        rtext.addView(Ui.label(ctx, "WEITERSPIELEN", 12f, Ui.ACCENT, true))
+        resumeTitle = Ui.label(ctx, "", 26f, Ui.TEXT, true).apply {
+            isSingleLine = true
+            ellipsize = android.text.TextUtils.TruncateAt.END
+        }
+        rtext.addView(resumeTitle)
+        resumeNote = Ui.label(ctx, "", 15f, Ui.MUTED)
+        rtext.addView(resumeNote)
+        val resumeBtn = Ui.button(ctx, "Fortsetzen", fill = Ui.ACCENT, textColor = 0xFF12161B.toInt(), sizeSp = 18f, onClick = {
+            resumeGame?.let { startGame(it) }
+        }).apply {
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            background = Ui.focusBackground(ctx, Ui.ACCENT, 28)
+        }
+        val btnLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        btnLp.topMargin = Ui.dp(ctx, 10)
+        rtext.addView(resumeBtn, btnLp)
+        val rtLp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        rtLp.leftMargin = Ui.dp(ctx, 20)
+        resumeCard.addView(rtext, rtLp)
+        val cardLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        cardLp.topMargin = Ui.dp(ctx, 14)
+        main.addView(resumeCard, cardLp)
+
+        listHeader = Ui.label(ctx, "ALLE SPIELE", 12f, Ui.MUTED, true).apply {
+            setPadding(Ui.dp(ctx, 4), 0, 0, 0)
+        }
+        val hdrLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        hdrLp.topMargin = Ui.dp(ctx, 14)
+        hdrLp.bottomMargin = Ui.dp(ctx, 6)
+        main.addView(listHeader, hdrLp)
+
+        listView = ListView(ctx).apply {
             divider = null
-            dividerHeight = Ui.dp(this@MainActivity, 8)
+            dividerHeight = Ui.dp(ctx, 8)
             selector = android.graphics.drawable.ColorDrawable(0)
             adapter = this@MainActivity.adapter
             isFocusable = true
@@ -124,49 +210,109 @@ class MainActivity : Activity() {
             itemsCanFocus = true
             descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
         }
-        emptyView = Ui.label(this, "", 17f, Ui.MUTED).apply {
+        emptyView = Ui.label(ctx, "", 17f, Ui.MUTED).apply {
             gravity = Gravity.CENTER
-            setPadding(Ui.dp(this@MainActivity, 24), Ui.dp(this@MainActivity, 24), Ui.dp(this@MainActivity, 24), 0)
+            setPadding(Ui.dp(ctx, 24), Ui.dp(ctx, 24), Ui.dp(ctx, 24), 0)
         }
         val listLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
-        listLp.topMargin = Ui.dp(this, 10)
-        root.addView(listView, listLp)
-        root.addView(emptyView, listLp)
-        updateTabs()
+        main.addView(listView, listLp)
+        main.addView(emptyView, listLp)
+        body.addView(main, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f))
+        root.addView(body, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+
+        // ---- Tastenleiste unten
+        val hints = Ui.horizontal(ctx).apply {
+            setBackgroundColor(0xFF0A0D10.toInt())
+            gravity = Gravity.CENTER
+            setPadding(0, Ui.dp(ctx, 6), 0, Ui.dp(ctx, 6))
+        }
+        hints.addView(hint("A", "Starten"))
+        hints.addView(hint("X", "Spielmenü"))
+        hints.addView(hint("Y", "Favorit"))
+        root.addView(hints, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+
+        updateNav()
         return root
     }
 
-    private fun updateTabs() {
-        for ((i, b) in tabButtons.withIndex()) {
-            val active = i == tab
-            b.background = Ui.focusBackground(this, if (active) Ui.ACCENT else Ui.SURFACE)
-            b.setTextColor(if (active) 0xFF12161B.toInt() else Ui.TEXT)
-            if (i == 3) b.text = "Konsole" + (systemFilter?.let { ": " + it.shortLabel } ?: "")
+    private fun hint(key: String, text: String): View {
+        val ctx = this
+        val row = Ui.horizontal(ctx).apply { setPadding(Ui.dp(ctx, 18), 0, Ui.dp(ctx, 18), 0) }
+        val k = Ui.label(ctx, key, 14f, Ui.TEXT, true).apply {
+            gravity = Gravity.CENTER
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Ui.SURFACE_HI)
+                cornerRadius = Ui.dp(ctx, 14).toFloat()
+            }
+        }
+        row.addView(k, LinearLayout.LayoutParams(Ui.dp(ctx, 28), Ui.dp(ctx, 28)))
+        row.addView(Ui.label(ctx, text, 15f, 0xFFC5CFD9.toInt()).apply { setPadding(Ui.dp(ctx, 10), 0, 0, 0) })
+        return row
+    }
+
+    private fun navButton(text: String, active: () -> Boolean, onClick: () -> Unit, small: Boolean = false): Button {
+        val ctx = this
+        val b = Ui.button(ctx, text, sizeSp = if (small) 16f else 18f, onClick = onClick).apply {
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+            minHeight = Ui.dp(ctx, if (small) 44 else 52)
+            minimumHeight = Ui.dp(ctx, if (small) 44 else 52)
+            setPadding(Ui.dp(ctx, 16), 0, Ui.dp(ctx, 12), 0)
+        }
+        navItems.add(b to active)
+        val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        lp.bottomMargin = Ui.dp(ctx, 2)
+        b.layoutParams = lp
+        return b
+    }
+
+    private fun updateNav() {
+        for ((b, active) in navItems) {
+            val on = active()
+            b.background = Ui.focusBackground(this, if (on) Ui.SURFACE_HI else 0, 14)
+            b.setTextColor(if (on) Ui.TEXT else 0xFFC5CFD9.toInt())
+            b.setTypeface(null, if (on) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+        }
+        listHeader.text = when (tab) {
+            1 -> "ZULETZT GESPIELT"
+            2 -> "FAVORITEN"
+            3 -> (systemFilter?.label ?: "ALLE KONSOLEN").uppercase()
+            else -> "ALLE SPIELE"
         }
     }
 
     private fun selectTab(index: Int) {
-        if (index == 3) {
-            pickSystem()
-            return
-        }
         tab = index
-        updateTabs()
+        systemFilter = null
+        updateNav()
         applyFilter()
     }
 
-    private fun pickSystem() {
-        val all = RetroSystem.values()
-        val items = arrayOf("Alle Konsolen") + all.map { s ->
-            val n = allGames.count { it.system == s }
-            s.label + (if (n > 0) "  ($n)" else "")
+    private fun selectSystem(sys: RetroSystem) {
+        tab = 3
+        systemFilter = sys
+        updateNav()
+        applyFilter()
+    }
+
+    /** Große Karte "Weiterspielen" mit dem zuletzt gespielten Spiel (nur in "Alle Spiele" ohne Suche). */
+    private fun updateResume() {
+        var g: Game? = null
+        if (tab == 0 && query.isEmpty()) {
+            for (k in prefs.recents()) {
+                g = allGames.firstOrNull { it.key == k && it.available }
+                if (g != null) break
+            }
         }
-        Ui.dialog(this).setTitle("Konsole wählen").setItems(items) { _, which ->
-            systemFilter = if (which == 0) null else all[which - 1]
-            tab = 3
-            updateTabs()
-            applyFilter()
-        }.setNegativeButton("Abbrechen", null).show()
+        resumeGame = g
+        if (g == null) {
+            resumeCard.visibility = View.GONE
+            return
+        }
+        resumeCard.visibility = View.VISIBLE
+        val cover = coverFor(g)
+        resumeCover.setImageBitmap(cover)
+        resumeTitle.text = g.title
+        resumeNote.text = g.system.label + if (paths.autoStateFile(g).exists()) "  ·  Fortsetzen möglich" else ""
     }
 
     // ---------------------------------------------------------------- Liste
@@ -224,6 +370,13 @@ class MainActivity : Activity() {
         }
         if (q.isNotEmpty()) list = list.filter { it.title.lowercase().contains(q) }
         shown = list
+        for ((sys, b) in systemButtons) {
+            val n = allGames.count { it.system == sys }
+            b.visibility = if (n > 0 || (tab == 3 && systemFilter == sys)) View.VISIBLE else View.GONE
+            b.text = sys.label + if (n > 0) "  ($n)" else ""
+        }
+        updateNav()
+        updateResume()
         adapter.notifyDataSetChanged()
         val empty = list.isEmpty()
         listView.visibility = if (empty) View.GONE else View.VISIBLE
@@ -301,6 +454,21 @@ class MainActivity : Activity() {
                     if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) focus.performClick()
                     return true
                 }
+                if (event.keyCode == KeyEvent.KEYCODE_BUTTON_Y) {
+                    val g = focus.tag as? Game
+                    if (g != null) {
+                        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                            prefs.toggleFavorite(g.key)
+                            val pos = listView.getPositionForView(focus)
+                            if (tab == 2) applyFilter() else adapter.notifyDataSetChanged()
+                            listView.post {
+                                val c = listView.getChildAt(pos - listView.firstVisiblePosition)
+                                if (c != null) c.requestFocus() else listView.requestFocus()
+                            }
+                        }
+                        return true
+                    }
+                }
                 if (event.keyCode == KeyEvent.KEYCODE_BUTTON_X) {
                     if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) focus.performLongClick()
                     return true
@@ -325,9 +493,9 @@ class MainActivity : Activity() {
             val row = LinearLayout(ctx).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                background = Ui.focusBackground(ctx, Ui.SURFACE)
-                minimumHeight = Ui.dp(ctx, 72)
-                setPadding(Ui.dp(ctx, 14), Ui.dp(ctx, 10), Ui.dp(ctx, 14), Ui.dp(ctx, 10))
+                background = Ui.focusBackground(ctx, Ui.SURFACE, 18)
+                minimumHeight = Ui.dp(ctx, 80)
+                setPadding(Ui.dp(ctx, 12), Ui.dp(ctx, 8), Ui.dp(ctx, 16), Ui.dp(ctx, 8))
                 isFocusable = true
                 isClickable = true
                 setOnClickListener { startGame(game) }
@@ -336,24 +504,17 @@ class MainActivity : Activity() {
                     true
                 }
             }
-            val badge = Ui.label(ctx, game.system.shortLabel, 14f, 0xFF12161B.toInt(), true).apply {
-                gravity = Gravity.CENTER
+            row.tag = game
+            val bmp = coverFor(game)
+            val img = android.widget.ImageView(ctx).apply {
+                scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
                 background = android.graphics.drawable.GradientDrawable().apply {
-                    setColor(badgeColor(game.system))
-                    cornerRadius = Ui.dp(ctx, 8).toFloat()
+                    setColor(0xFF0E1216.toInt())
+                    cornerRadius = Ui.dp(ctx, 10).toFloat()
                 }
-                setPadding(Ui.dp(ctx, 6), Ui.dp(ctx, 6), Ui.dp(ctx, 6), Ui.dp(ctx, 6))
+                if (bmp != null) setImageBitmap(bmp)
             }
-            row.addView(badge, LinearLayout.LayoutParams(Ui.dp(ctx, 96), ViewGroup.LayoutParams.WRAP_CONTENT))
-            coverFor(game)?.let { bmp ->
-                val img = android.widget.ImageView(ctx).apply {
-                    setImageBitmap(bmp)
-                    scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-                }
-                val lp = LinearLayout.LayoutParams(Ui.dp(ctx, 96), Ui.dp(ctx, 72))
-                lp.leftMargin = Ui.dp(ctx, 12)
-                row.addView(img, lp)
-            }
+            row.addView(img, LinearLayout.LayoutParams(Ui.dp(ctx, 96), Ui.dp(ctx, 64)))
 
             val col = Ui.vertical(ctx)
             col.addView(Ui.label(ctx, game.title, 20f, Ui.TEXT, true).apply {
@@ -370,6 +531,15 @@ class MainActivity : Activity() {
             val colLp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             colLp.leftMargin = Ui.dp(ctx, 14)
             row.addView(col, colLp)
+            val badge = Ui.label(ctx, game.system.shortLabel, 14f, 0xFF12161B.toInt(), true).apply {
+                gravity = Gravity.CENTER
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(badgeColor(game.system))
+                    cornerRadius = Ui.dp(ctx, 8).toFloat()
+                }
+                setPadding(Ui.dp(ctx, 10), Ui.dp(ctx, 4), Ui.dp(ctx, 10), Ui.dp(ctx, 4))
+            }
+            row.addView(badge, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             return row
         }
     }
@@ -409,7 +579,7 @@ class MainActivity : Activity() {
             Ui.dialog(this)
                 .setTitle("Zugriff auf den USB-Stick")
                 .setMessage(
-                    "Damit PoloRetro Dateien vom Stick lesen kann, braucht die App die Berechtigung " +
+                    "Damit Zockpit Dateien vom Stick lesen kann, braucht die App die Berechtigung " +
                         "\"Zugriff auf alle Dateien\". Du kannst sie in den Android-Einstellungen erlauben " +
                         "oder stattdessen den Ordner auf dem Stick selbst auswählen.",
                 )

@@ -100,7 +100,7 @@ class SettingsActivity : Activity() {
         }), margins())
 
         section("Über")
-        box.addView(note("PoloRetro ${BuildConfig.VERSION_NAME}\nKerne: snes9x, Genesis Plus GX, Mupen64Plus-Next (libretro, GPL) über LibretroDroid."))
+        box.addView(note("Zockpit ${BuildConfig.VERSION_NAME}\nKerne: snes9x, Genesis Plus GX, Mupen64Plus-Next (libretro, GPL) über LibretroDroid."))
     }
 
     // ---------------------------------------------------------------- Bausteine
@@ -210,7 +210,7 @@ class SettingsActivity : Activity() {
     private fun firstStickRoot(): File? {
         if (!UsbImport.hasAllFilesAccess()) {
             Ui.dialog(this)
-                .setMessage("Für den USB-Stick braucht PoloRetro die Berechtigung \"Zugriff auf alle Dateien\". Du kannst sie im Hauptmenü über \"USB-Import\" erteilen.")
+                .setMessage("Für den USB-Stick braucht Zockpit die Berechtigung \"Zugriff auf alle Dateien\". Du kannst sie im Hauptmenü über \"USB-Import\" erteilen.")
                 .setPositiveButton("OK", null)
                 .show()
             return null
@@ -297,7 +297,7 @@ class SettingsActivity : Activity() {
         val text = DiagLog.text().ifEmpty { "(leer)" }.takeLast(200_000)
         val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(android.content.Intent.EXTRA_SUBJECT, "PoloRetro Protokoll (Version ${BuildConfig.VERSION_NAME})")
+            putExtra(android.content.Intent.EXTRA_SUBJECT, "Zockpit Protokoll (Version ${BuildConfig.VERSION_NAME})")
             putExtra(android.content.Intent.EXTRA_TEXT, text)
         }
         try {

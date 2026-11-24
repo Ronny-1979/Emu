@@ -1,5 +1,10 @@
 # Änderungen
 
+## 0.4.0
+- Neuer Name: Zockpit (Ordner "PoloRetro" auf dem USB-Stick und die Paketkennung bleiben, damit alles weiter funktioniert).
+- Neue Startseite nach Entwurf A: Seitenleiste (Alle Spiele, Zuletzt, Favoriten, Konsolen mit Anzahl), Suchfeld mit runden Knöpfen, große Karte "Weiterspielen", Spieleliste mit Titelbild (vollständig), Konsolen-Marke rechts, Tastenleiste unten.
+- Controller: Y schaltet bei dem markierten Spiel den Favoriten um.
+
 ## 0.3.10
 - Titelbilder in der Liste werden vollständig angezeigt (nicht mehr rechts abgeschnitten): Bild wird eingepasst statt gefüllt, Feld etwas breiter (96 x 72 dp).
 

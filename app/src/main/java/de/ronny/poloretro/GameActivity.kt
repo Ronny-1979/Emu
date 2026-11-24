@@ -337,7 +337,7 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
 
     private fun showFatal(message: String) {
         Ui.dialog(this)
-            .setTitle("PoloRetro")
+            .setTitle("Zockpit")
             .setMessage(message)
             .setCancelable(false)
             .setPositiveButton("Zurück") { _, _ -> finish() }
