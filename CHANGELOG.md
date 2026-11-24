@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.4.2
+- Startseite deutlich kompakter: kleinere Schrift, schmalere Seitenleiste, flachere Karte "Weiterspielen" und niedrigere Listenzeilen, damit mehr Spiele gleichzeitig sichtbar sind.
+
 ## 0.4.1
 - USB-Import und Steuerung liegen jetzt in den Einstellungen (Abschnitt "Spiele und Controller"). Die Startseite hat oben nur noch Suche und Einstellungen.
 

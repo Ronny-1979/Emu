@@ -87,25 +87,25 @@ class MainActivity : Activity() {
         // ---- Seitenleiste
         val side = Ui.vertical(ctx).apply {
             setBackgroundColor(0xFF0E1216.toInt())
-            setPadding(Ui.dp(ctx, 14), Ui.dp(ctx, 16), Ui.dp(ctx, 14), Ui.dp(ctx, 8))
+            setPadding(Ui.dp(ctx, 10), Ui.dp(ctx, 10), Ui.dp(ctx, 10), Ui.dp(ctx, 4))
         }
-        val logoRow = Ui.horizontal(ctx).apply { setPadding(Ui.dp(ctx, 6), 0, 0, Ui.dp(ctx, 12)) }
-        val logo = Ui.label(ctx, "Z", 24f, Ui.BG, true).apply {
+        val logoRow = Ui.horizontal(ctx).apply { setPadding(Ui.dp(ctx, 4), 0, 0, Ui.dp(ctx, 8)) }
+        val logo = Ui.label(ctx, "Z", 17f, Ui.BG, true).apply {
             gravity = Gravity.CENTER
             background = android.graphics.drawable.GradientDrawable().apply {
                 setColor(Ui.ACCENT)
-                cornerRadius = Ui.dp(ctx, 12).toFloat()
+                cornerRadius = Ui.dp(ctx, 8).toFloat()
             }
         }
-        logoRow.addView(logo, LinearLayout.LayoutParams(Ui.dp(ctx, 42), Ui.dp(ctx, 42)))
-        logoRow.addView(Ui.label(ctx, "Zockpit", 26f, Ui.TEXT, true).apply { setPadding(Ui.dp(ctx, 12), 0, 0, 0) })
+        logoRow.addView(logo, LinearLayout.LayoutParams(Ui.dp(ctx, 30), Ui.dp(ctx, 30)))
+        logoRow.addView(Ui.label(ctx, "Zockpit", 19f, Ui.TEXT, true).apply { setPadding(Ui.dp(ctx, 8), 0, 0, 0) })
         side.addView(logoRow)
 
         side.addView(navButton("Alle Spiele", { tab == 0 }, { selectTab(0) }))
         side.addView(navButton("Zuletzt", { tab == 1 }, { selectTab(1) }))
         side.addView(navButton("Favoriten", { tab == 2 }, { selectTab(2) }))
-        side.addView(Ui.label(ctx, "KONSOLEN", 12f, Ui.MUTED, true).apply {
-            setPadding(Ui.dp(ctx, 10), Ui.dp(ctx, 14), 0, Ui.dp(ctx, 4))
+        side.addView(Ui.label(ctx, "KONSOLEN", 10f, Ui.MUTED, true).apply {
+            setPadding(Ui.dp(ctx, 8), Ui.dp(ctx, 8), 0, Ui.dp(ctx, 2))
         })
         val consoles = Ui.vertical(ctx)
         for (sys in RetroSystem.values()) {
@@ -119,23 +119,23 @@ class MainActivity : Activity() {
             addView(consoles)
         }
         side.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
-        body.addView(side, LinearLayout.LayoutParams(Ui.dp(ctx, 240), ViewGroup.LayoutParams.MATCH_PARENT))
+        body.addView(side, LinearLayout.LayoutParams(Ui.dp(ctx, 165), ViewGroup.LayoutParams.MATCH_PARENT))
 
         // ---- Hauptbereich
         val main = Ui.vertical(ctx).apply {
-            setPadding(Ui.dp(ctx, 28), Ui.dp(ctx, 16), Ui.dp(ctx, 28), Ui.dp(ctx, 4))
+            setPadding(Ui.dp(ctx, 20), Ui.dp(ctx, 10), Ui.dp(ctx, 20), Ui.dp(ctx, 2))
         }
         val top = Ui.horizontal(ctx)
         search = EditText(ctx).apply {
             hint = "Spiel suchen ..."
             setHintTextColor(Ui.MUTED)
             setTextColor(Ui.TEXT)
-            textSize = 17f
+            textSize = 14f
             inputType = InputType.TYPE_CLASS_TEXT
             isSingleLine = true
-            background = Ui.focusBackground(ctx, Ui.SURFACE, 26)
-            setPadding(Ui.dp(ctx, 20), Ui.dp(ctx, 8), Ui.dp(ctx, 20), Ui.dp(ctx, 8))
-            minHeight = Ui.dp(ctx, 52)
+            background = Ui.focusBackground(ctx, Ui.SURFACE, 20)
+            setPadding(Ui.dp(ctx, 14), Ui.dp(ctx, 4), Ui.dp(ctx, 14), Ui.dp(ctx, 4))
+            minHeight = Ui.dp(ctx, 38)
             addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -150,8 +150,11 @@ class MainActivity : Activity() {
             "Einstellungen" to { startActivity(Intent(this, SettingsActivity::class.java)) },
         )) {
             top.addView(Ui.spacer(ctx, 8))
-            top.addView(Ui.button(ctx, text, sizeSp = 15f, onClick = action).apply {
-                background = Ui.focusBackground(ctx, Ui.SURFACE, 26)
+            top.addView(Ui.button(ctx, text, sizeSp = 13f, onClick = action).apply {
+                background = Ui.focusBackground(ctx, Ui.SURFACE, 20)
+                minHeight = Ui.dp(ctx, 38)
+                minimumHeight = Ui.dp(ctx, 38)
+                setPadding(Ui.dp(ctx, 14), Ui.dp(ctx, 2), Ui.dp(ctx, 14), Ui.dp(ctx, 2))
             })
         }
         main.addView(top)
@@ -160,56 +163,59 @@ class MainActivity : Activity() {
         resumeCard = Ui.horizontal(ctx).apply {
             background = android.graphics.drawable.GradientDrawable().apply {
                 setColor(Ui.SURFACE)
-                cornerRadius = Ui.dp(ctx, 24).toFloat()
+                cornerRadius = Ui.dp(ctx, 16).toFloat()
             }
-            setPadding(Ui.dp(ctx, 14), Ui.dp(ctx, 14), Ui.dp(ctx, 20), Ui.dp(ctx, 14))
+            setPadding(Ui.dp(ctx, 8), Ui.dp(ctx, 8), Ui.dp(ctx, 14), Ui.dp(ctx, 8))
             visibility = View.GONE
         }
         resumeCover = android.widget.ImageView(ctx).apply {
             scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
             background = android.graphics.drawable.GradientDrawable().apply {
                 setColor(0xFF0E1216.toInt())
-                cornerRadius = Ui.dp(ctx, 14).toFloat()
+                cornerRadius = Ui.dp(ctx, 10).toFloat()
             }
-            setPadding(Ui.dp(ctx, 6), Ui.dp(ctx, 6), Ui.dp(ctx, 6), Ui.dp(ctx, 6))
+            setPadding(Ui.dp(ctx, 4), Ui.dp(ctx, 4), Ui.dp(ctx, 4), Ui.dp(ctx, 4))
         }
-        resumeCard.addView(resumeCover, LinearLayout.LayoutParams(Ui.dp(ctx, 170), Ui.dp(ctx, 120)))
+        resumeCard.addView(resumeCover, LinearLayout.LayoutParams(Ui.dp(ctx, 108), Ui.dp(ctx, 76)))
         val rtext = Ui.vertical(ctx)
-        rtext.addView(Ui.label(ctx, "WEITERSPIELEN", 12f, Ui.ACCENT, true))
-        resumeTitle = Ui.label(ctx, "", 26f, Ui.TEXT, true).apply {
+        rtext.addView(Ui.label(ctx, "WEITERSPIELEN", 10f, Ui.ACCENT, true))
+        resumeTitle = Ui.label(ctx, "", 18f, Ui.TEXT, true).apply {
             isSingleLine = true
             ellipsize = android.text.TextUtils.TruncateAt.END
         }
         rtext.addView(resumeTitle)
-        resumeNote = Ui.label(ctx, "", 15f, Ui.MUTED)
+        resumeNote = Ui.label(ctx, "", 12f, Ui.MUTED)
         rtext.addView(resumeNote)
-        val resumeBtn = Ui.button(ctx, "Fortsetzen", fill = Ui.ACCENT, textColor = 0xFF12161B.toInt(), sizeSp = 18f, onClick = {
+        val resumeBtn = Ui.button(ctx, "Fortsetzen", fill = Ui.ACCENT, textColor = 0xFF12161B.toInt(), sizeSp = 14f, onClick = {
             resumeGame?.let { startGame(it) }
         }).apply {
             setTypeface(typeface, android.graphics.Typeface.BOLD)
-            background = Ui.focusBackground(ctx, Ui.ACCENT, 28)
+            background = Ui.focusBackground(ctx, Ui.ACCENT, 20)
+            minHeight = Ui.dp(ctx, 34)
+            minimumHeight = Ui.dp(ctx, 34)
+            setPadding(Ui.dp(ctx, 18), Ui.dp(ctx, 2), Ui.dp(ctx, 18), Ui.dp(ctx, 2))
         }
         val btnLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        btnLp.topMargin = Ui.dp(ctx, 10)
+        btnLp.topMargin = Ui.dp(ctx, 6)
         rtext.addView(resumeBtn, btnLp)
         val rtLp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        rtLp.leftMargin = Ui.dp(ctx, 20)
+        rtLp.leftMargin = Ui.dp(ctx, 14)
         resumeCard.addView(rtext, rtLp)
         val cardLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        cardLp.topMargin = Ui.dp(ctx, 14)
+        cardLp.topMargin = Ui.dp(ctx, 8)
         main.addView(resumeCard, cardLp)
 
-        listHeader = Ui.label(ctx, "ALLE SPIELE", 12f, Ui.MUTED, true).apply {
+        listHeader = Ui.label(ctx, "ALLE SPIELE", 10f, Ui.MUTED, true).apply {
             setPadding(Ui.dp(ctx, 4), 0, 0, 0)
         }
         val hdrLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        hdrLp.topMargin = Ui.dp(ctx, 14)
-        hdrLp.bottomMargin = Ui.dp(ctx, 6)
+        hdrLp.topMargin = Ui.dp(ctx, 8)
+        hdrLp.bottomMargin = Ui.dp(ctx, 4)
         main.addView(listHeader, hdrLp)
 
         listView = ListView(ctx).apply {
             divider = null
-            dividerHeight = Ui.dp(ctx, 8)
+            dividerHeight = Ui.dp(ctx, 5)
             selector = android.graphics.drawable.ColorDrawable(0)
             adapter = this@MainActivity.adapter
             isFocusable = true
@@ -231,7 +237,7 @@ class MainActivity : Activity() {
         val hints = Ui.horizontal(ctx).apply {
             setBackgroundColor(0xFF0A0D10.toInt())
             gravity = Gravity.CENTER
-            setPadding(0, Ui.dp(ctx, 6), 0, Ui.dp(ctx, 6))
+            setPadding(0, Ui.dp(ctx, 3), 0, Ui.dp(ctx, 3))
         }
         hints.addView(hint("A", "Starten"))
         hints.addView(hint("X", "Spielmenü"))
@@ -244,30 +250,30 @@ class MainActivity : Activity() {
 
     private fun hint(key: String, text: String): View {
         val ctx = this
-        val row = Ui.horizontal(ctx).apply { setPadding(Ui.dp(ctx, 18), 0, Ui.dp(ctx, 18), 0) }
-        val k = Ui.label(ctx, key, 14f, Ui.TEXT, true).apply {
+        val row = Ui.horizontal(ctx).apply { setPadding(Ui.dp(ctx, 14), 0, Ui.dp(ctx, 14), 0) }
+        val k = Ui.label(ctx, key, 11f, Ui.TEXT, true).apply {
             gravity = Gravity.CENTER
             background = android.graphics.drawable.GradientDrawable().apply {
                 setColor(Ui.SURFACE_HI)
-                cornerRadius = Ui.dp(ctx, 14).toFloat()
+                cornerRadius = Ui.dp(ctx, 10).toFloat()
             }
         }
-        row.addView(k, LinearLayout.LayoutParams(Ui.dp(ctx, 28), Ui.dp(ctx, 28)))
-        row.addView(Ui.label(ctx, text, 15f, 0xFFC5CFD9.toInt()).apply { setPadding(Ui.dp(ctx, 10), 0, 0, 0) })
+        row.addView(k, LinearLayout.LayoutParams(Ui.dp(ctx, 20), Ui.dp(ctx, 20)))
+        row.addView(Ui.label(ctx, text, 12f, 0xFFC5CFD9.toInt()).apply { setPadding(Ui.dp(ctx, 7), 0, 0, 0) })
         return row
     }
 
     private fun navButton(text: String, active: () -> Boolean, onClick: () -> Unit, small: Boolean = false): Button {
         val ctx = this
-        val b = Ui.button(ctx, text, sizeSp = if (small) 16f else 18f, onClick = onClick).apply {
+        val b = Ui.button(ctx, text, sizeSp = if (small) 12f else 14f, onClick = onClick).apply {
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            minHeight = Ui.dp(ctx, if (small) 44 else 52)
-            minimumHeight = Ui.dp(ctx, if (small) 44 else 52)
-            setPadding(Ui.dp(ctx, 16), 0, Ui.dp(ctx, 12), 0)
+            minHeight = Ui.dp(ctx, if (small) 32 else 38)
+            minimumHeight = Ui.dp(ctx, if (small) 32 else 38)
+            setPadding(Ui.dp(ctx, 12), 0, Ui.dp(ctx, 8), 0)
         }
         navItems.add(b to active)
         val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        lp.bottomMargin = Ui.dp(ctx, 2)
+        lp.bottomMargin = Ui.dp(ctx, 1)
         b.layoutParams = lp
         return b
     }
@@ -275,7 +281,7 @@ class MainActivity : Activity() {
     private fun updateNav() {
         for ((b, active) in navItems) {
             val on = active()
-            b.background = Ui.focusBackground(this, if (on) Ui.SURFACE_HI else 0, 14)
+            b.background = Ui.focusBackground(this, if (on) Ui.SURFACE_HI else 0, 10)
             b.setTextColor(if (on) Ui.TEXT else 0xFFC5CFD9.toInt())
             b.setTypeface(null, if (on) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
         }
@@ -500,9 +506,9 @@ class MainActivity : Activity() {
             val row = LinearLayout(ctx).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                background = Ui.focusBackground(ctx, Ui.SURFACE, 18)
-                minimumHeight = Ui.dp(ctx, 80)
-                setPadding(Ui.dp(ctx, 12), Ui.dp(ctx, 8), Ui.dp(ctx, 16), Ui.dp(ctx, 8))
+                background = Ui.focusBackground(ctx, Ui.SURFACE, 12)
+                minimumHeight = Ui.dp(ctx, 54)
+                setPadding(Ui.dp(ctx, 8), Ui.dp(ctx, 5), Ui.dp(ctx, 12), Ui.dp(ctx, 5))
                 isFocusable = true
                 isClickable = true
                 setOnClickListener { startGame(game) }
@@ -517,14 +523,14 @@ class MainActivity : Activity() {
                 scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
                 background = android.graphics.drawable.GradientDrawable().apply {
                     setColor(0xFF0E1216.toInt())
-                    cornerRadius = Ui.dp(ctx, 10).toFloat()
+                    cornerRadius = Ui.dp(ctx, 7).toFloat()
                 }
                 if (bmp != null) setImageBitmap(bmp)
             }
-            row.addView(img, LinearLayout.LayoutParams(Ui.dp(ctx, 96), Ui.dp(ctx, 64)))
+            row.addView(img, LinearLayout.LayoutParams(Ui.dp(ctx, 68), Ui.dp(ctx, 44)))
 
             val col = Ui.vertical(ctx)
-            col.addView(Ui.label(ctx, game.title, 20f, Ui.TEXT, true).apply {
+            col.addView(Ui.label(ctx, game.title, 15f, Ui.TEXT, true).apply {
                 isSingleLine = true
                 ellipsize = android.text.TextUtils.TruncateAt.END
             })
@@ -534,17 +540,17 @@ class MainActivity : Activity() {
             else if (game.external) notes.add("auf USB-Stick")
             if (paths.autoStateFile(game).exists()) notes.add("Fortsetzen möglich")
             if (game.key in prefs.favorites()) notes.add("Favorit")
-            col.addView(Ui.label(ctx, notes.joinToString("  ·  "), 13f, Ui.MUTED))
+            col.addView(Ui.label(ctx, notes.joinToString("  ·  "), 11f, Ui.MUTED))
             val colLp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            colLp.leftMargin = Ui.dp(ctx, 14)
+            colLp.leftMargin = Ui.dp(ctx, 10)
             row.addView(col, colLp)
-            val badge = Ui.label(ctx, game.system.shortLabel, 14f, 0xFF12161B.toInt(), true).apply {
+            val badge = Ui.label(ctx, game.system.shortLabel, 11f, 0xFF12161B.toInt(), true).apply {
                 gravity = Gravity.CENTER
                 background = android.graphics.drawable.GradientDrawable().apply {
                     setColor(badgeColor(game.system))
                     cornerRadius = Ui.dp(ctx, 8).toFloat()
                 }
-                setPadding(Ui.dp(ctx, 10), Ui.dp(ctx, 4), Ui.dp(ctx, 10), Ui.dp(ctx, 4))
+                setPadding(Ui.dp(ctx, 8), Ui.dp(ctx, 3), Ui.dp(ctx, 8), Ui.dp(ctx, 3))
             }
             row.addView(badge, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             return row
