@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.4.3
+- Vollbild jetzt in der ganzen App (Startseite, Einstellungen, Steuerung): Status- und Navigationsleiste werden ausgeblendet; per Wischen vom Rand erscheinen sie kurz.
+
 ## 0.4.2
 - Startseite deutlich kompakter: kleinere Schrift, schmalere Seitenleiste, flachere Karte "Weiterspielen" und niedrigere Listenzeilen, damit mehr Spiele gleichzeitig sichtbar sind.
 

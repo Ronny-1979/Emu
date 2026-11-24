@@ -19,6 +19,11 @@ class SettingsActivity : Activity() {
     private lateinit var paths: AppPaths
     private lateinit var box: LinearLayout
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) FullScreen.apply(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
@@ -34,6 +39,7 @@ class SettingsActivity : Activity() {
         }
         scroll.addView(box)
         setContentView(scroll)
+        FullScreen.apply(this)
         rebuild()
     }
 

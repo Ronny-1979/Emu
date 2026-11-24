@@ -41,12 +41,18 @@ class ControllerActivity : Activity() {
     private var lastPhysical: Int? = null
     private var lastAxes = "—"
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) FullScreen.apply(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
         system = RetroSystem.fromId(intent.getStringExtra(EXTRA_SYSTEM)) ?: RetroSystem.SNES
         mapping = prefs.mappingFor(system)
         setContentView(buildUi())
+        FullScreen.apply(this)
         rebuildList()
         renderLive()
     }

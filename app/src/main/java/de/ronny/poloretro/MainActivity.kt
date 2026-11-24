@@ -53,6 +53,11 @@ class MainActivity : Activity() {
     private var progressDialog: AlertDialog? = null
     private var progressText: TextView? = null
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) FullScreen.apply(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         DiagLog.init(this)
@@ -60,6 +65,7 @@ class MainActivity : Activity() {
         paths = AppPaths(this)
         library = RomLibrary(this)
         setContentView(buildUi())
+        FullScreen.apply(this)
         window.statusBarColor = Ui.BG
     }
 
