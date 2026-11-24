@@ -348,9 +348,9 @@ class MainActivity : Activity() {
             coverFor(game)?.let { bmp ->
                 val img = android.widget.ImageView(ctx).apply {
                     setImageBitmap(bmp)
-                    scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                    scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
                 }
-                val lp = LinearLayout.LayoutParams(Ui.dp(ctx, 72), Ui.dp(ctx, 72))
+                val lp = LinearLayout.LayoutParams(Ui.dp(ctx, 96), Ui.dp(ctx, 72))
                 lp.leftMargin = Ui.dp(ctx, 12)
                 row.addView(img, lp)
             }

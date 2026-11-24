@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.3.10
+- Titelbilder in der Liste werden vollständig angezeigt (nicht mehr rechts abgeschnitten): Bild wird eingepasst statt gefüllt, Feld etwas breiter (96 x 72 dp).
+
 ## 0.3.9
 - Titelbilder jetzt über GitHub: Die Bilder liegen als Dateien in den Repositories der Organisation libretro-thumbnails (z. B. Nintendo_-_Super_Nintendo_Entertainment_System). Die App holt sie zuerst von dort (raw.githubusercontent.com), weil der libretro-Server auf dem Radio für alles 404 liefert. Die Namensliste für die Ähnlichkeitssuche kommt von der GitHub-Schnittstelle. Der libretro-Server bleibt als Ersatz.
 - Bei 404 steht im Protokoll zusätzlich die Server-Kennung und der Anfang der Antwort.
