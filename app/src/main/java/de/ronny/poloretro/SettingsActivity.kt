@@ -1,6 +1,7 @@
 package de.ronny.poloretro
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -43,6 +44,19 @@ class SettingsActivity : Activity() {
         header.addView(Ui.label(this, "Einstellungen", 28f, Ui.ACCENT, true), Ui.weight())
         header.addView(Ui.button(this, "Fertig", onClick = { finish() }))
         box.addView(header)
+
+        section("Spiele und Controller")
+        box.addView(Ui.button(this, "USB-Import (Spiele vom Stick holen)", onClick = {
+            startActivity(
+                Intent(this, MainActivity::class.java)
+                    .putExtra(MainActivity.EXTRA_ACTION, MainActivity.ACTION_IMPORT)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            )
+            finish()
+        }), margins())
+        box.addView(Ui.button(this, "Steuerung (Controller belegen)", onClick = {
+            startActivity(Intent(this, ControllerActivity::class.java))
+        }), margins())
 
         section("Bild und Ton")
         choice("Bildfilter", arrayOf("Standard (weich)", "Scharf", "CRT-Röhre", "LCD-Raster"), prefs.shader) { prefs.shader = it }
@@ -210,7 +224,7 @@ class SettingsActivity : Activity() {
     private fun firstStickRoot(): File? {
         if (!UsbImport.hasAllFilesAccess()) {
             Ui.dialog(this)
-                .setMessage("Für den USB-Stick braucht Zockpit die Berechtigung \"Zugriff auf alle Dateien\". Du kannst sie im Hauptmenü über \"USB-Import\" erteilen.")
+                .setMessage("Für den USB-Stick braucht Zockpit die Berechtigung \"Zugriff auf alle Dateien\". Du kannst sie in den Einstellungen über \"USB-Import\" erteilen.")
                 .setPositiveButton("OK", null)
                 .show()
             return null

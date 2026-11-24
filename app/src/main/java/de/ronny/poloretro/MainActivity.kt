@@ -23,7 +23,7 @@ import android.widget.TextView
 import android.widget.Toast
 import java.io.File
 
-/** Startseite: Spieleliste, USB-Import, Zugang zu Controller und Einstellungen. */
+/** Startseite: Spieleliste, Suche und Zugang zu den Einstellungen (dort USB-Import und Steuerung). */
 class MainActivity : Activity() {
     private lateinit var prefs: Prefs
     private lateinit var paths: AppPaths
@@ -66,6 +66,15 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         refresh()
+        if (intent?.getStringExtra(EXTRA_ACTION) == ACTION_IMPORT) {
+            intent.removeExtra(EXTRA_ACTION)
+            startImport()
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
     }
 
     // ---------------------------------------------------------------- Oberfläche
@@ -138,8 +147,6 @@ class MainActivity : Activity() {
         }
         top.addView(search, Ui.weight())
         for ((text, action) in listOf<Pair<String, () -> Unit>>(
-            "USB-Import" to { startImport() },
-            "Steuerung" to { openController() },
             "Einstellungen" to { startActivity(Intent(this, SettingsActivity::class.java)) },
         )) {
             top.addView(Ui.spacer(ctx, 8))
@@ -384,7 +391,7 @@ class MainActivity : Activity() {
         if (empty) {
             emptyView.text = if (allGames.isEmpty()) {
                 "Noch keine Spiele.\n\nLege deine ROM-Dateien in den Ordner \"${UsbImport.STICK_FOLDER}\" oder \"Roms\" auf einem USB-Stick (Unterordner sind erlaubt, die Konsole erkennt die App selbst), " +
-                    "stecke ihn ins Radio und tippe oben auf \"USB-Import\".\n\n" +
+                    "stecke ihn ins Radio und öffne oben \"Einstellungen\" und tippe auf \"USB-Import\".\n\n" +
                     "Alternativ: Dateien direkt in diesen Ordner kopieren:\n${paths.externalRomDir?.absolutePath ?: paths.romDir.absolutePath}"
             } else {
                 "Keine Treffer in dieser Ansicht."
@@ -742,6 +749,8 @@ class MainActivity : Activity() {
     }
 
     companion object {
+        const val EXTRA_ACTION = "action"
+        const val ACTION_IMPORT = "import"
         private const val REQ_TREE = 4711
     }
 }

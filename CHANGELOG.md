@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.4.1
+- USB-Import und Steuerung liegen jetzt in den Einstellungen (Abschnitt "Spiele und Controller"). Die Startseite hat oben nur noch Suche und Einstellungen.
+
 ## 0.4.0
 - Neuer Name: Zockpit (Ordner "PoloRetro" auf dem USB-Stick und die Paketkennung bleiben, damit alles weiter funktioniert).
 - Neue Startseite nach Entwurf A: Seitenleiste (Alle Spiele, Zuletzt, Favoriten, Konsolen mit Anzahl), Suchfeld mit runden Knöpfen, große Karte "Weiterspielen", Spieleliste mit Titelbild (vollständig), Konsolen-Marke rechts, Tastenleiste unten.
