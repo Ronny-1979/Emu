@@ -72,9 +72,96 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         refresh()
+        startStickWatch()
         if (intent?.getStringExtra(EXTRA_ACTION) == ACTION_IMPORT) {
             intent.removeExtra(EXTRA_ACTION)
             startImport()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopStickWatch()
+    }
+
+    // ---------------------------------------------------------------- USB-Stick beobachten
+
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var stickReceiver: android.content.BroadcastReceiver? = null
+    private var pollUntil = 0L
+    private var lastUsbState = ""
+    private val pollRunnable = Runnable { refresh() }
+    private val eventRunnable = Runnable { pollUntil = System.currentTimeMillis() + 60_000; refresh() }
+
+    /**
+     * Nach dem Hochfahren meldet das Radio den Stick oft erst spät oder gar nicht. Die App hört auf die Mount-
+     * und USB-Meldungen, liest die Liste neu und fragt, solange ein Stick fehlt, drei Minuten lang alle paar
+     * Sekunden nach. Den Zustand schreibt sie ins Protokoll (Einstellungen -> Protokoll).
+     */
+    private fun startStickWatch() {
+        pollUntil = System.currentTimeMillis() + 180_000
+        logUsbState("Start")
+        if (stickReceiver != null) return
+        val r = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: android.content.Context?, i: Intent?) {
+                DiagLog.add("USB/Speicher-Meldung: ${i?.action}")
+                handler.removeCallbacks(eventRunnable)
+                handler.postDelayed(eventRunnable, 1500)
+            }
+        }
+        val media = android.content.IntentFilter().apply {
+            for (a in listOf(
+                Intent.ACTION_MEDIA_MOUNTED, Intent.ACTION_MEDIA_UNMOUNTED, Intent.ACTION_MEDIA_REMOVED,
+                Intent.ACTION_MEDIA_BAD_REMOVAL, Intent.ACTION_MEDIA_EJECT, Intent.ACTION_MEDIA_CHECKING,
+            )) addAction(a)
+            addDataScheme("file")
+        }
+        val usb = android.content.IntentFilter().apply {
+            addAction(android.hardware.usb.UsbManager.ACTION_USB_DEVICE_ATTACHED)
+            addAction(android.hardware.usb.UsbManager.ACTION_USB_DEVICE_DETACHED)
+        }
+        try {
+            registerReceiver(r, media)
+            registerReceiver(r, usb)
+            stickReceiver = r
+        } catch (t: Throwable) {
+            DiagLog.add("USB-Beobachtung nicht möglich: ${t.javaClass.simpleName}")
+        }
+    }
+
+    private fun stopStickWatch() {
+        handler.removeCallbacks(pollRunnable)
+        handler.removeCallbacks(eventRunnable)
+        stickReceiver?.let { try { unregisterReceiver(it) } catch (_: Throwable) {} }
+        stickReceiver = null
+    }
+
+    private fun logUsbState(reason: String) {
+        val sb = StringBuilder()
+        try {
+            val um = getSystemService(android.content.Context.USB_SERVICE) as android.hardware.usb.UsbManager
+            val devs = um.deviceList.values
+            sb.append("USB-Geräte: ")
+            if (devs.isEmpty()) sb.append("keine")
+            for (d in devs) {
+                val classes = (0 until d.interfaceCount).joinToString("/") { d.getInterface(it).interfaceClass.toString() }
+                sb.append("[%04x:%04x Klassen %s] ".format(d.vendorId, d.productId, classes))
+            }
+        } catch (t: Throwable) {
+            sb.append("USB-Geräte: nicht lesbar (${t.javaClass.simpleName}) ")
+        }
+        try {
+            val sm = getSystemService(android.content.Context.STORAGE_SERVICE) as android.os.storage.StorageManager
+            sb.append("| Laufwerke: ")
+            for (v in sm.storageVolumes) if (!v.isPrimary) sb.append("[${v.getDescription(this)}: ${v.state}] ")
+            sb.append("| lesbar: ").append(UsbImport.candidateRoots(this).joinToString { it.absolutePath }.ifEmpty { "keins" })
+        } catch (t: Throwable) {
+            sb.append("| Laufwerke: nicht lesbar (${t.javaClass.simpleName})")
+        }
+        val text = sb.toString()
+        if (text != lastUsbState) {
+            lastUsbState = text
+            DiagLog.add("Stick-Zustand ($reason): $text")
         }
     }
 
@@ -343,6 +430,11 @@ class MainActivity : Activity() {
                 allGames = games
                 applyFilter()
                 autoCovers(games)
+                logUsbState("Liste")
+                handler.removeCallbacks(pollRunnable)
+                if (!isFinishing && games.any { !it.available } && System.currentTimeMillis() < pollUntil) {
+                    handler.postDelayed(pollRunnable, 4000)
+                }
             }
         }.start()
     }

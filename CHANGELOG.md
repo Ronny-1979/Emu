@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.4.4
+- USB-Stick nach dem Hochfahren: Die App hört auf Mount- und USB-Meldungen und liest die Spieleliste sofort neu; fehlt ein Stick, fragt sie drei Minuten lang alle 4 Sekunden nach. Der Zustand (USB-Geräte, Laufwerke, lesbare Pfade) steht im Protokoll. Ein Trennen und Neuverbinden des USB-Anschlusses ist ohne Root für eine App nicht möglich.
+
 ## 0.4.3
 - Vollbild jetzt in der ganzen App (Startseite, Einstellungen, Steuerung): Status- und Navigationsleiste werden ausgeblendet; per Wischen vom Rand erscheinen sie kurz.
 
