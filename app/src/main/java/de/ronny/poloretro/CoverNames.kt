@@ -5,6 +5,9 @@ import java.net.URLEncoder
 /** Namensregeln von thumbnails.libretro.com (Bilder heißen wie das Spiel im No-Intro-Namen, als PNG). */
 object CoverNames {
     const val SERVER = "https://thumbnails.libretro.com"
+    /** Dieselben Bilder liegen bei GitHub (Organisation libretro-thumbnails, ein Repository je Konsole). */
+    const val GITHUB_RAW = "https://raw.githubusercontent.com/libretro-thumbnails"
+    const val GITHUB_API = "https://api.github.com/repos/libretro-thumbnails"
     const val BOXART = "Named_Boxarts"
     const val TITLE = "Named_Titles"
     const val SNAP = "Named_Snaps"
@@ -31,6 +34,10 @@ object CoverNames {
     fun url(system: RetroSystem, kind: String, name: String): String =
         "$SERVER/${enc(system.thumbFolder)}/$kind/${enc(fileName(name))}.png"
 
+    /** Direkter Weg über GitHub (raw): Konsole-Repository / master / Bildart / Name.png */
+    fun githubUrl(system: RetroSystem, kind: String, name: String): String =
+        "$GITHUB_RAW/${system.thumbRepo}/master/$kind/${enc(fileName(name))}.png"
+
     /** Gleiche Adresse mit sparsamer Verschlüsselung; manche Server mögen %28/%29 nicht. */
     fun urlLight(system: RetroSystem, kind: String, name: String): String =
         "$SERVER/${enc(system.thumbFolder)}/$kind/${encLight(fileName(name))}.png"
@@ -39,6 +46,9 @@ object CoverNames {
     fun candidates(system: RetroSystem, romFileName: String): List<String> {
         val names = variants(romFileName)
         val out = ArrayList<String>()
+        // GitHub zuerst: Es liefert dieselben Dateien und ist auf dem Radio erreichbar, der libretro-Server nicht immer.
+        for (n in names) out.add(githubUrl(system, BOXART, n))
+        names.firstOrNull()?.let { out.add(githubUrl(system, TITLE, it)) }
         for (n in names) {
             out.add(url(system, BOXART, n))
             out.add(urlLight(system, BOXART, n))

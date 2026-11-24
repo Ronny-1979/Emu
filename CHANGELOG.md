@@ -1,5 +1,9 @@
 # Änderungen
 
+## 0.3.9
+- Titelbilder jetzt über GitHub: Die Bilder liegen als Dateien in den Repositories der Organisation libretro-thumbnails (z. B. Nintendo_-_Super_Nintendo_Entertainment_System). Die App holt sie zuerst von dort (raw.githubusercontent.com), weil der libretro-Server auf dem Radio für alles 404 liefert. Die Namensliste für die Ähnlichkeitssuche kommt von der GitHub-Schnittstelle. Der libretro-Server bleibt als Ersatz.
+- Bei 404 steht im Protokoll zusätzlich die Server-Kennung und der Anfang der Antwort.
+
 ## 0.3.8
 - Titelbilder nach dem Vorbild von RetroArch: zusätzlich die Spielszene (Named_Snaps) als letzter Ausweg, und bei einer 404-Antwort von https wird einmal http probiert (RetroArch nutzt laut Dokumentation http://thumbnails.libretro.com). Das Ergebnis steht im Protokoll.
 

@@ -75,4 +75,8 @@ enum class RetroSystem(
             return values().firstOrNull { e in it.extensions }
         }
     }
+
+    /** Name des Bilder-Repositorys bei GitHub (libretro-thumbnails): Leerzeichen werden zu Unterstrichen. */
+    val thumbRepo: String get() = thumbFolder.replace(' ', '_')
+
 }

@@ -110,7 +110,7 @@ class CoverDownloader(private val paths: AppPaths) {
         DiagLog.add("Titelbild-Netzfehler: ${e.javaClass.simpleName}: ${e.message}$cause (${address.substringBefore('?').take(80)})")
     }
 
-    private class Resp(val code: Int, val bytes: ByteArray?)
+    private class Resp(val code: Int, val bytes: ByteArray?, val info: String = "")
 
     private fun get(address: String, maxBytes: Int): Resp {
         var conn: HttpURLConnection? = null
@@ -127,7 +127,10 @@ class CoverDownloader(private val paths: AppPaths) {
                 val bytes = conn.inputStream.use { it.readBytes() }
                 if (bytes.size > maxBytes) Resp(code, null) else Resp(code, bytes)
             } else {
-                Resp(code, null)
+                // Fehlerantwort: Server-Kennung und Anfang des Textes merken (zur Fehlersuche im Protokoll).
+                val body = try { conn.errorStream?.use { it.readBytes().take(100).toByteArray().toString(Charsets.UTF_8) } } catch (_: Exception) { null }
+                val who = listOfNotNull(conn.getHeaderField("Server"), conn.getHeaderField("Via")).joinToString("/")
+                Resp(code, null, "Server=${who.ifEmpty { "?" }}, Text: ${body?.replace('\n', ' ')?.trim() ?: "-"}")
             }
         } catch (e: IOException) {
             logNetError(address, e)
@@ -160,7 +163,7 @@ class CoverDownloader(private val paths: AppPaths) {
     private fun handle(address: String, r: Resp, target: File): Fetch {
         if (r.code == -1) { DiagLog.add("Titelbild: Netzfehler bei $address"); return Fetch.ERROR }
         if (r.code == 404) {
-            if (notFoundLogged++ < 3) DiagLog.add("Titelbild: HTTP 404 bei $address")
+            if (notFoundLogged++ < 4) DiagLog.add("Titelbild: HTTP 404 bei $address (${r.info})")
             return Fetch.NOT_FOUND
         }
         if (r.code != 200) { DiagLog.add("Titelbild: HTTP ${r.code} bei $address"); return Fetch.ERROR }
@@ -192,7 +195,29 @@ class CoverDownloader(private val paths: AppPaths) {
             // neu laden
         }
         val dirUrl = "${CoverNames.SERVER}/" + java.net.URLEncoder.encode(system.thumbFolder, "UTF-8").replace("+", "%20") + "/${CoverNames.BOXART}/"
-        // Der Server bietet je Ordner eine Datei ".index" mit allen Namen (so lädt auch RetroArch); die Ordnerseite
+        // 1. GitHub-Schnittstelle: Dateiliste des Ordners Named_Boxarts im Repository der Konsole (ein Aufruf, einen Monat gemerkt).
+        try {
+            val api = get("${CoverNames.GITHUB_API}/${system.thumbRepo}/git/trees/master:${CoverNames.BOXART}", 12_000_000)
+            val json = api.bytes?.toString(Charsets.UTF_8)
+            if (json != null) {
+                val arr = org.json.JSONObject(json).optJSONArray("tree")
+                val list = ArrayList<String>()
+                if (arr != null) for (i in 0 until arr.length()) {
+                    val p = arr.getJSONObject(i).optString("path")
+                    if (p.endsWith(".png", ignoreCase = true)) list.add(p.substringBeforeLast('.'))
+                }
+                DiagLog.add("Titelbild: Namensliste ${system.shortLabel} über GitHub: ${list.size} Einträge")
+                if (list.isNotEmpty()) {
+                    try { cache.writeText(list.joinToString("\n")) } catch (_: Exception) { /* egal */ }
+                    return list
+                }
+            } else {
+                DiagLog.add("Titelbild: GitHub-Namensliste ${system.shortLabel} nicht ladbar (HTTP ${api.code})")
+            }
+        } catch (e: Exception) {
+            DiagLog.add("Titelbild: GitHub-Namensliste ${system.shortLabel}: ${e.javaClass.simpleName}: ${e.message}")
+        }
+        // 2. Der libretro-Server bietet je Ordner eine Datei ".index" mit allen Namen (so lädt auch RetroArch); die Ordnerseite
         // selbst liefert inzwischen 404. Beides wird probiert.
         var text: String? = null
         var lastCode = 0

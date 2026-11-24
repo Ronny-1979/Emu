@@ -190,7 +190,7 @@ fun main() {
         CoverNames.url(RetroSystem.SNES, CoverNames.BOXART, "Super Mario World (USA)"),
         "https://thumbnails.libretro.com/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/Named_Boxarts/Super%20Mario%20World%20%28USA%29.png",
     )
-    eq("cover Kandidaten", CoverNames.candidates(RetroSystem.GBA, "A (E) [!].gba").size, 7)
+    eq("cover Kandidaten", CoverNames.candidates(RetroSystem.GBA, "A (E) [!].gba").size, 10)
     eq(
         "cover URL sparsam",
         CoverNames.urlLight(RetroSystem.SNES, CoverNames.BOXART, "Yoshi's Island (Europe) (En,Fr,De)"),
@@ -198,7 +198,13 @@ fun main() {
     )
     val gbaCandidates = CoverNames.candidates(RetroSystem.GBA, "A (E).gba")
     check("cover Spielszene ganz zuletzt", gbaCandidates.last().contains("Named_Snaps"))
-    check("cover Titelbildschirm vor Spielszene", gbaCandidates.indexOfFirst { it.contains("Named_Titles") } > gbaCandidates.indexOfLast { it.contains("Named_Boxarts") })
+    check("cover Titelbildschirm vor Spielszene", gbaCandidates.indexOfFirst { it.contains("Named_Titles") } < gbaCandidates.indexOfLast { it.contains("Named_Snaps") })
+    check("cover GitHub zuerst", gbaCandidates.first().startsWith("https://raw.githubusercontent.com/libretro-thumbnails/Nintendo_-_Game_Boy_Advance/master/Named_Boxarts/"))
+    eq(
+        "cover GitHub-Adresse",
+        CoverNames.githubUrl(RetroSystem.SNES, CoverNames.BOXART, "Super Mario All-Stars (Europe)"),
+        "https://raw.githubusercontent.com/libretro-thumbnails/Nintendo_-_Super_Nintendo_Entertainment_System/master/Named_Boxarts/Super%20Mario%20All-Stars%20%28Europe%29.png",
+    )
     check("jede Konsole hat Thumb-Ordner", RetroSystem.values().all { it.thumbFolder.isNotBlank() && !it.thumbFolder.contains('/') })
 
     // ---- ROM-Ordner auf dem Stick
