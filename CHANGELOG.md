@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.4.8
+- Dateinamen mit angehängter Prüfsumme (z. B. "Spiel (USA).MD.B362B705.339A8C9A...") werden erkannt: Die Konsole kommt aus der Endung vor den Prüfsummen, der Titel ohne sie. Beim Kopieren aufs Radio wird der Name bereinigt ("Spiel (USA).MD"). Zusätzlich liegt ein Skript bei, das Dateien auf dem PC umbenennt.
+
 ## 0.4.7
 - USB-Import: "Vom Stick spielen" entfernt. Gefundene Spiele werden immer auf das Radio kopiert.
 
