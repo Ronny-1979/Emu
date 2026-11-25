@@ -227,6 +227,12 @@ fun main() {
     val stick2 = File(tmp, "stick2").apply { mkdirs() }
     File(stick2, "PoloRetro").mkdirs(); File(stick2, "Roms").mkdirs()
     eq("PoloRetro vor Roms", UsbImport.libraryFolder(stick2).name, "PoloRetro")
+    // PoloRetro (alt, nur SNES) und Roms (alle Konsolen) nebeneinander: beide werden gelesen
+    File(stick2, "PoloRetro").mkdirs(); File(stick2, "Roms/Mega Drive").mkdirs()
+    File(stick2, "PoloRetro/Alt.sfc").writeBytes(ByteArray(3))
+    File(stick2, "Roms/Mega Drive/Sonic.md").writeBytes(ByteArray(3))
+    eq("beide Ordner gelistet", UsbImport.libraryFolders(stick2).map { it.name }, listOf("PoloRetro", "Roms"))
+    eq("beide Ordner gelesen", UsbImport.scanFolder(stick2).size, 2)
     val stick3 = File(tmp, "stick3").apply { mkdirs() }
     File(stick3, "lose.nes").writeBytes(ByteArray(3))
     eq("ohne Ordner: Stick selbst", UsbImport.libraryFolder(stick3), stick3)

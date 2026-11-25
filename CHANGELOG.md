@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.4.5
+- USB-Import: Es werden jetzt alle ROM-Ordner auf dem Stick gelesen (PoloRetro, Roms, ROM, Spiele, Games), nicht mehr nur der erste. Vorher wurde ein vorhandener Ordner "PoloRetro" vor "Roms" bevorzugt, und die Unterordner von "Roms" (Mega Drive, N64 usw.) blieben unbeachtet. Das Protokoll zeigt je Ordner die Anzahl gefundener Spiele.
+
 ## 0.4.4
 - USB-Stick nach dem Hochfahren: Die App hört auf Mount- und USB-Meldungen und liest die Spieleliste sofort neu; fehlt ein Stick, fragt sie drei Minuten lang alle 4 Sekunden nach. Der Zustand (USB-Geräte, Laufwerke, lesbare Pfade) steht im Protokoll. Ein Trennen und Neuverbinden des USB-Anschlusses ist ohne Root für eine App nicht möglich.
 

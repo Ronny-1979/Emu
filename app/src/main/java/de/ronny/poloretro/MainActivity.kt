@@ -707,9 +707,11 @@ class MainActivity : Activity() {
             val seen = HashSet<String>()
             try {
                 for (root in UsbImport.candidateRoots(this)) {
-                    val sources = UsbImport.scanFolder(root)
-                    if (sources.isNotEmpty()) folders.add(UsbImport.libraryFolder(root))
-                    for (s in sources) if (seen.add(s.name.lowercase())) found.add(s)
+                    for ((folder, sources) in UsbImport.scanFolders(root)) {
+                        DiagLog.add("USB-Suche: ${folder.absolutePath}: ${sources.size} Spiele")
+                        if (sources.isNotEmpty()) folders.add(folder)
+                        for (s in sources) if (seen.add(s.name.lowercase())) found.add(s)
+                    }
                 }
             } catch (e: Exception) {
                 DiagLog.add("USB-Suche: ${e.javaClass.simpleName}: ${e.message}")

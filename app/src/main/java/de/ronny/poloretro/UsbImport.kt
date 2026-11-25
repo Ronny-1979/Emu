@@ -82,11 +82,36 @@ object UsbImport {
         return root
     }
 
-    /** ROMs auf einem Stick: bevorzugt im ROM-Ordner samt Unterordnern (z. B. Roms/SNES/...), sonst lose im Stammverzeichnis. */
+    /** Alle ROM-Ordner auf dem Stick (PoloRetro, Roms, ROM, Spiele, Games), nicht nur der erste. */
+    fun libraryFolders(root: File): List<File> {
+        val dirs = root.listFiles()?.filter { it.isDirectory } ?: return emptyList()
+        val out = ArrayList<File>()
+        for (name in ROM_FOLDER_NAMES) {
+            dirs.firstOrNull { it.name.equals(name, ignoreCase = true) }?.let { if (it !in out) out.add(it) }
+        }
+        return out
+    }
+
+    /** ROMs je Ordner: alle ROM-Ordner samt Unterordnern (z. B. Roms/SNES/...), sonst lose im Stammverzeichnis. */
+    fun scanFolders(root: File): List<Pair<File, List<RomSource>>> {
+        val folders = libraryFolders(root)
+        if (folders.isEmpty()) {
+            val out = ArrayList<RomSource>()
+            walk(root, 0, 2, out)
+            return listOf(root to out)
+        }
+        return folders.map { f ->
+            val out = ArrayList<RomSource>()
+            walk(f, 0, 5, out)
+            f to out
+        }
+    }
+
+    /** ROMs auf einem Stick aus allen ROM-Ordnern. */
     fun scanFolder(root: File): List<RomSource> {
         val out = ArrayList<RomSource>()
-        val folder = libraryFolder(root)
-        if (folder != root) walk(folder, 0, 5, out) else walk(root, 0, 2, out)
+        val seen = HashSet<String>()
+        for ((_, list) in scanFolders(root)) for (r in list) if (seen.add(r.name.lowercase())) out.add(r)
         return out
     }
 
