@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.4.7
+- USB-Import: "Vom Stick spielen" entfernt. Gefundene Spiele werden immer auf das Radio kopiert.
+
 ## 0.4.6
 - Einstellungen: neuer Knopf "Ordner selbst auswählen" (Systemauswahl, z. B. den Ordner Roms auf dem Stick). Die gefundenen Spiele werden auf das Radio kopiert.
 - Tastenleiste unten höher, damit sie nicht mehr aus dem Bild ragt.

@@ -794,21 +794,11 @@ class MainActivity : Activity() {
             .setTitle("${found.size} Spiele gefunden")
             .setMessage(
                 "Gesamtgröße etwa $mb MB.\n\n" +
-                    "Kopieren: Die Spiele liegen danach auf dem Radio, der Stick wird nicht mehr gebraucht.\n" +
-                    if (folders.isNotEmpty()) "Vom Stick spielen: Der Ordner wird gemerkt, die Spiele bleiben auf dem Stick und " +
-                        "erscheinen immer in der Liste. Spielstände liegen immer auf dem Radio."
-                    else "",
+                    "Die Spiele werden auf das Radio kopiert, danach wird der Stick nicht mehr gebraucht. " +
+                    "Spielstände liegen immer auf dem Radio.",
             )
             .setPositiveButton("Auf Radio kopieren") { _, _ -> runImport(found, dest) }
             .setNegativeButton("Abbrechen", null)
-        if (folders.isNotEmpty()) {
-            builder.setNeutralButton("Vom Stick spielen") { _, _ ->
-                for (f in folders) prefs.addLibraryFolder(f.absolutePath)
-                DiagLog.add("Bibliotheksordner gemerkt: ${folders.joinToString { it.absolutePath }}")
-                Toast.makeText(this, "Ordner gemerkt", Toast.LENGTH_SHORT).show()
-                refresh()
-            }
-        }
         builder.show()
     }
 
