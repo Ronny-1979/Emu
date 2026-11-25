@@ -73,9 +73,9 @@ class MainActivity : Activity() {
         super.onResume()
         refresh()
         startStickWatch()
-        if (intent?.getStringExtra(EXTRA_ACTION) == ACTION_IMPORT) {
-            intent.removeExtra(EXTRA_ACTION)
-            startImport()
+        when (intent?.getStringExtra(EXTRA_ACTION)) {
+            ACTION_IMPORT -> { intent.removeExtra(EXTRA_ACTION); startImport() }
+            ACTION_PICK -> { intent.removeExtra(EXTRA_ACTION); pickFolder() }
         }
     }
 
@@ -330,7 +330,7 @@ class MainActivity : Activity() {
         val hints = Ui.horizontal(ctx).apply {
             setBackgroundColor(0xFF0A0D10.toInt())
             gravity = Gravity.CENTER
-            setPadding(0, Ui.dp(ctx, 3), 0, Ui.dp(ctx, 3))
+            setPadding(0, Ui.dp(ctx, 3), 0, Ui.dp(ctx, 18))
         }
         hints.addView(hint("A", "Starten"))
         hints.addView(hint("X", "Spielmenü"))
@@ -707,10 +707,16 @@ class MainActivity : Activity() {
             val seen = HashSet<String>()
             try {
                 for (root in UsbImport.candidateRoots(this)) {
+                    DiagLog.add("USB-Suche: Stick ${root.absolutePath}, Ordner: " +
+                        (root.listFiles()?.filter { it.isDirectory }?.joinToString { it.name } ?: "nicht lesbar"))
                     for ((folder, sources) in UsbImport.scanFolders(root)) {
                         DiagLog.add("USB-Suche: ${folder.absolutePath}: ${sources.size} Spiele")
                         if (sources.isNotEmpty()) folders.add(folder)
                         for (s in sources) if (seen.add(s.name.lowercase())) found.add(s)
+                    }
+                    if (UsbImport.skipped.isNotEmpty()) {
+                        DiagLog.add("USB-Suche: nicht erkannte Dateien (Endung: Anzahl): " +
+                            UsbImport.skipped.entries.sortedByDescending { it.value }.take(12).joinToString { "${it.key}: ${it.value}" })
                     }
                 }
             } catch (e: Exception) {
@@ -857,6 +863,7 @@ class MainActivity : Activity() {
     companion object {
         const val EXTRA_ACTION = "action"
         const val ACTION_IMPORT = "import"
+        const val ACTION_PICK = "pick"
         private const val REQ_TREE = 4711
     }
 }

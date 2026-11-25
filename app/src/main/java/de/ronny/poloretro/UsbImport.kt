@@ -94,6 +94,7 @@ object UsbImport {
 
     /** ROMs je Ordner: alle ROM-Ordner samt Unterordnern (z. B. Roms/SNES/...), sonst lose im Stammverzeichnis. */
     fun scanFolders(root: File): List<Pair<File, List<RomSource>>> {
+        skipped.clear()
         val folders = libraryFolders(root)
         if (folders.isEmpty()) {
             val out = ArrayList<RomSource>()
@@ -115,6 +116,9 @@ object UsbImport {
         return out
     }
 
+    /** Nicht erkannte Dateiendungen des letzten Suchlaufs (für das Protokoll). */
+    val skipped = LinkedHashMap<String, Int>()
+
     private fun walk(dir: File, depth: Int, maxDepth: Int, out: MutableList<RomSource>) {
         val children = dir.listFiles() ?: return
         for (child in children) {
@@ -123,8 +127,13 @@ object UsbImport {
                 if (depth < maxDepth && !n.startsWith(".") && n !in SKIP_DIRS) walk(child, depth + 1, maxDepth, out)
             } else if (RomNames.isCandidate(child.name)) {
                 // Fremde ZIP-Dateien vom Stick (Fotos, Backups ...) nicht mitnehmen.
-                if (RomNames.isZip(child.name) && ZipRom.find(child) == null) continue
+                if (RomNames.isZip(child.name) && ZipRom.find(child) == null) {
+                    skipped.merge("zip ohne ROM", 1, Int::plus)
+                    continue
+                }
                 out.add(FileSource(child))
+            } else {
+                skipped.merge(child.name.substringAfterLast('.', "(ohne)").lowercase(), 1, Int::plus)
             }
         }
     }

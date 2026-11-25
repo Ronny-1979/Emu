@@ -1,5 +1,10 @@
 # Änderungen
 
+## 0.4.6
+- Einstellungen: neuer Knopf "Ordner selbst auswählen" (Systemauswahl, z. B. den Ordner Roms auf dem Stick). Die gefundenen Spiele werden auf das Radio kopiert.
+- Tastenleiste unten höher, damit sie nicht mehr aus dem Bild ragt.
+- Protokoll bei der USB-Suche: Ordner auf dem Stick und nicht erkannte Dateiendungen (zeigt, warum z. B. Mega-Drive-Spiele fehlen).
+
 ## 0.4.5
 - USB-Import: Es werden jetzt alle ROM-Ordner auf dem Stick gelesen (PoloRetro, Roms, ROM, Spiele, Games), nicht mehr nur der erste. Vorher wurde ein vorhandener Ordner "PoloRetro" vor "Roms" bevorzugt, und die Unterordner von "Roms" (Mega Drive, N64 usw.) blieben unbeachtet. Das Protokoll zeigt je Ordner die Anzahl gefundener Spiele.
 
