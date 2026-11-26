@@ -71,6 +71,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        clearSearch()
         refresh()
         startStickWatch()
         when (intent?.getStringExtra(EXTRA_ACTION)) {
@@ -397,7 +398,16 @@ class MainActivity : Activity() {
         }
     }
 
+    /** Suchfeld leeren: Die Suche gilt nur, solange man sie benutzt. */
+    private fun clearSearch() {
+        if (!::search.isInitialized) return
+        if (query.isEmpty() && search.text.isNullOrEmpty()) return
+        query = ""
+        search.setText("")
+    }
+
     private fun selectTab(index: Int) {
+        clearSearch()
         tab = index
         systemFilter = null
         updateNav()
@@ -405,6 +415,7 @@ class MainActivity : Activity() {
     }
 
     private fun selectSystem(sys: RetroSystem) {
+        clearSearch()
         tab = 3
         systemFilter = sys
         updateNav()
@@ -595,6 +606,7 @@ class MainActivity : Activity() {
     }
 
     private fun startGame(game: Game) {
+        clearSearch()
         if (game.available && !game.file.exists()) {
             Toast.makeText(this, "Datei nicht mehr vorhanden", Toast.LENGTH_SHORT).show()
             refresh()

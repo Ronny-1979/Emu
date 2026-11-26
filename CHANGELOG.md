@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.5.2
+- Die Suche wird geleert, sobald man einen anderen Bereich oder eine Konsole wählt, ein Spiel startet oder in die App zurückkehrt.
+
 ## 0.5.1
 - Einstellungen neu geordnet nach Themen mit kurzen Erklärungen: Spiele, Titelbilder, Controller, Bild und Ton, Beim Spielen, Nintendo 64, Spielstände sichern, Fehlersuche. Technische Schalter (Audiofokus, schneller Audiomodus) stehen jetzt unter Fehlersuche. Alte gemerkte Ordner erscheinen nur noch, wenn es welche gibt.
 - Spielmenü mit Zwischenüberschriften (Spielstand, Spiel, Bild und Ton, Steuerung, Extras) und Hinweis auf L2 zum Zurückspulen.
