@@ -99,6 +99,7 @@ void LibretroDroid::resetGlobalVariables() {
     input = nullptr;
     rumble = nullptr;
     runAhead = nullptr;
+    rewind = nullptr;
 }
 
 int LibretroDroid::availableDisks() {
@@ -149,6 +150,7 @@ void LibretroDroid::setControllerType(unsigned int port, unsigned int type) {
 
 bool LibretroDroid::unserializeState(int8_t *data, size_t size) {
     std::lock_guard<std::mutex> lock(coreLock);
+    if (rewind) rewind->clear();
 
     return core->retro_unserialize(data, size);
 }
@@ -448,6 +450,11 @@ void LibretroDroid::pause() {
     input = nullptr;
 }
 
+// Zurückspulen: alle 3 Bilder ein Schritt, 200 Schritte = 10 Sekunden bei 60 Bildern pro Sekunde.
+static constexpr size_t REWIND_MAX_STEPS = 200;
+static constexpr size_t REWIND_MAX_BYTES = 96u * 1024u * 1024u;
+static constexpr unsigned REWIND_INTERVAL = 3;
+
 void LibretroDroid::step() {
     // Automatische Bildverzögerung: erst kurz vor dem nächsten Bildtakt rechnen, damit die Tasten
     // möglichst aktuell sind. Nur mit Bildtakt-Synchronisation, und ohne den Kern-Lock zu halten.
@@ -475,8 +482,26 @@ void LibretroDroid::step() {
     unsigned runs = frames * frameSpeed;
 
     // Run-Ahead geht nur, wenn genau ein Bild gerechnet wird und der Kern nicht über die Grafikkarte zeichnet.
-    bool useRunAhead = runAheadEnabled && runs == 1 && !Environment::getInstance().isUseHwAcceleration();
+    bool hwAccel = Environment::getInstance().isUseHwAcceleration();
+
+    // Zurückspulen: Solange die Taste gehalten wird, werden gesicherte Zustände rückwärts abgespielt.
     bool handled = false;
+    bool rewinding = false;
+    if (rewindEnabled && !hwAccel) {
+        if (!rewind) rewind = std::make_unique<Rewind>(REWIND_MAX_STEPS, REWIND_MAX_BYTES);
+        if (rewindHeld.load()) {
+            rewinding = true;
+            handled = true;
+            if (rewind->pop(rewindBuffer) && core->retro_unserialize(rewindBuffer.data(), rewindBuffer.size())) {
+                rewindMuteAudio = true;
+                core->retro_run();
+                rewindMuteAudio = false;
+            }
+            // Ist nichts mehr da, bleibt das letzte Bild stehen.
+        }
+    }
+
+    bool useRunAhead = runAheadEnabled && runs == 1 && !hwAccel && !rewinding;
     if (useRunAhead) {
         if (!runAhead) {
             RunAhead::Hooks hooks;
@@ -498,6 +523,20 @@ void LibretroDroid::step() {
     if (!handled) {
         for (size_t i = 0; i < runs; i++)
             core->retro_run();
+    }
+
+    // Alle REWIND_INTERVAL Bilder den Zustand sichern (nicht beim Zurückspulen).
+    if (rewindEnabled && !hwAccel && !rewinding && rewind) {
+        if (++rewindCounter >= REWIND_INTERVAL) {
+            rewindCounter = 0;
+            size_t stateSize = core->retro_serialize_size();
+            if (stateSize > 0) {
+                if (rewindBuffer.size() < stateSize) rewindBuffer.resize(stateSize);
+                if (core->retro_serialize(rewindBuffer.data(), stateSize)) {
+                    rewind->push(rewindBuffer.data(), stateSize);
+                }
+            }
+        }
     }
 
     if (video && !video->rendersInVideoCallback()) {
@@ -567,6 +606,25 @@ void LibretroDroid::setRunAhead(bool enabled) {
     if (!enabled) runAhead = nullptr;
 }
 
+void LibretroDroid::setRewind(bool enabled) {
+    std::lock_guard<std::mutex> lock(coreLock);
+    rewindEnabled = enabled;
+    rewindCounter = 0;
+    if (!enabled) {
+        rewind = nullptr;
+        rewindHeld.store(false);
+    }
+}
+
+void LibretroDroid::setRewindHeld(bool held) {
+    rewindHeld.store(held);
+}
+
+int LibretroDroid::getRewindSteps() {
+    std::lock_guard<std::mutex> lock(coreLock);
+    return rewind ? (int) rewind->available() : -1;
+}
+
 bool LibretroDroid::isRunAheadActive() {
     std::lock_guard<std::mutex> lock(coreLock);
     return runAheadEnabled && runAhead != nullptr && !runAhead->isBroken();
@@ -606,7 +664,7 @@ void LibretroDroid::handleVideoRefresh(
 }
 
 size_t LibretroDroid::handleAudioCallback(const int16_t *data, size_t frames) {
-    if (outputMuted) return frames;
+    if (outputMuted || rewindMuteAudio) return frames;
 
     if (audio && audioEnabled) {
         audio->write(data, frames);
@@ -635,6 +693,7 @@ uintptr_t LibretroDroid::handleGetCurrentFrameBuffer() {
 
 void LibretroDroid::reset() {
     std::lock_guard<std::mutex> lock(coreLock);
+    if (rewind) rewind->clear();
 
     core->retro_reset();
 }

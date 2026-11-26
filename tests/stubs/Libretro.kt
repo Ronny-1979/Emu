@@ -33,6 +33,9 @@ class GLRetroView(context: Context, private val data: GLRetroViewData) : GLSurfa
     var runAhead: Boolean = false
     var autoFrameDelay: Boolean = false
     fun isRunAheadActive(): Boolean = false
+    var rewind: Boolean = false
+    fun setRewindHeld(held: Boolean) {}
+    fun rewindSteps(): Int = -1
     var shader: ShaderConfig = ShaderConfig.Default
     var viewport: RectF = RectF()
     fun sendKeyEvent(action: Int, keyCode: Int, port: Int = 0) {}

@@ -342,6 +342,16 @@ class MainActivity : Activity() {
         return root
     }
 
+    /** Gespielte Zeit als Text, null unter einer Minute. */
+    private fun playTimeText(game: Game): String? {
+        val minutes = prefs.playSeconds(game.system, game.saveKey) / 60
+        return when {
+            minutes <= 0 -> null
+            minutes < 60 -> "$minutes Min gespielt"
+            else -> "${minutes / 60} Std ${minutes % 60} Min gespielt"
+        }
+    }
+
     private fun hint(key: String, text: String): View {
         val ctx = this
         val row = Ui.horizontal(ctx).apply { setPadding(Ui.dp(ctx, 14), 0, Ui.dp(ctx, 14), 0) }
@@ -419,7 +429,8 @@ class MainActivity : Activity() {
         val cover = coverFor(g)
         resumeCover.setImageBitmap(cover)
         resumeTitle.text = g.title
-        resumeNote.text = g.system.label + if (paths.autoStateFile(g).exists()) "  ·  Fortsetzen möglich" else ""
+        resumeNote.text = g.system.label + (if (paths.autoStateFile(g).exists()) "  ·  Fortsetzen möglich" else "") +
+            (playTimeText(g)?.let { "  ·  $it" } ?: "")
     }
 
     // ---------------------------------------------------------------- Liste
@@ -687,6 +698,7 @@ class MainActivity : Activity() {
             if (!game.available) notes.add("Stick nicht eingesteckt")
             else if (game.external) notes.add("auf USB-Stick")
             if (paths.autoStateFile(game).exists()) notes.add("Fortsetzen möglich")
+            playTimeText(game)?.let { notes.add(it) }
             if (game.key in prefs.favorites()) notes.add("Favorit")
             col.addView(Ui.label(ctx, notes.joinToString("  ·  "), 11f, Ui.MUTED))
             val colLp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)

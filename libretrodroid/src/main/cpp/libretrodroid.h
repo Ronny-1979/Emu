@@ -37,6 +37,9 @@
 #include "renderers/renderer.h"
 #include "fpssync.h"
 #include "runahead.h"
+#include "rewind.h"
+#include <atomic>
+#include <vector>
 #include "framedelay.h"
 #include "input.h"
 #include "rumble.h"
@@ -131,6 +134,9 @@ public:
 
     void setFrameSpeed(unsigned int speed);
     void setRunAhead(bool enabled);
+    void setRewind(bool enabled);
+    void setRewindHeld(bool held);
+    int getRewindSteps();
     bool isRunAheadActive();
     void setAutoFrameDelay(bool enabled);
 
@@ -168,6 +174,12 @@ private:
     bool autoFrameDelayEnabled = false;
     bool outputMuted = false;
     bool runAheadWarned = false;
+    bool rewindEnabled = false;
+    std::atomic<bool> rewindHeld { false };
+    bool rewindMuteAudio = false;
+    unsigned rewindCounter = 0;
+    std::vector<uint8_t> rewindBuffer;
+    std::unique_ptr<Rewind> rewind;
     bool preferLowLatencyAudio = false;
     bool rumbleEnabled = false;
 

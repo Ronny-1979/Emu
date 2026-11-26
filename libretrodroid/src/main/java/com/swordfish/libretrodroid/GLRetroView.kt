@@ -67,6 +67,17 @@ class GLRetroView(
         LibretroDroid.setAutoFrameDelay(value)
     }
 
+    /** Zurückspulen (PoloRetro-Ergänzung): sichert laufend Zustände, nur für Kerne ohne GPU-Zeichnung. */
+    var rewind: Boolean by Delegates.observable(false) { _, _, value ->
+        LibretroDroid.setRewind(value)
+    }
+
+    /** Zurückspulen läuft, solange true gesetzt ist. */
+    fun setRewindHeld(held: Boolean) = LibretroDroid.setRewindHeld(held)
+
+    /** Anzahl gesicherter Schritte (-1 = aus oder nicht möglich). */
+    fun rewindSteps(): Int = LibretroDroid.getRewindSteps()
+
     /** Läuft Run-Ahead wirklich? False, wenn es aus ist oder der Kern es nicht kann. */
     fun isRunAheadActive(): Boolean = LibretroDroid.isRunAheadActive()
 

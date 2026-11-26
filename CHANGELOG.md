@@ -1,5 +1,9 @@
 # Änderungen
 
+## 0.5.0
+- Zurückspulen: L2 halten, das Spiel läuft bis zu etwa 10 Sekunden rückwärts. Es werden alle 3 Bilder Zustände gesichert, gespeichert wird nur der Unterschied (wenig Speicher). Nicht beim N64. In den Einstellungen abschaltbar. Neuer Code im nativen Teil (rewind.h, nur am PC mit Schein-Kern getestet).
+- Spielzeit: Die App zählt, wie lange jedes Spiel gespielt wurde, und zeigt es in der Liste und bei "Weiterspielen".
+
 ## 0.4.9
 - Erkennung und Bereinigung von Dateinamen mit angehängter Prüfsumme wieder entfernt (0.4.8 zurückgenommen).
 - Neu: Einstellungen -> "Spiele löschen": erst Konsole wählen, dann einzelne Spiele ankreuzen oder "Alle auswählen". Gelöscht werden die Spiele auf dem Radio samt ihren Spielständen.

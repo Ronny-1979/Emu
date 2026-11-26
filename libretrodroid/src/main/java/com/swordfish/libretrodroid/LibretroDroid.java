@@ -114,6 +114,9 @@ public class LibretroDroid {
     public static native void setRunAhead(boolean enabled);
     public static native void setAutoFrameDelay(boolean enabled);
     public static native boolean isRunAheadActive();
+    public static native void setRewind(boolean enabled);
+    public static native void setRewindHeld(boolean held);
+    public static native int getRewindSteps();
     public static native void setAudioEnabled(boolean enabled);
     public static native void setShaderConfig(GLRetroShader shader);
     public static native void setViewport(float x, float y, float width, float height);

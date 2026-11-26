@@ -135,6 +135,9 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
         retroView = GLRetroView(this, data)
         // Nur 2D-Konsolen: Der N64-Kern zeichnet mit der Grafikkarte, dort geht Run-Ahead nicht.
         retroView.runAhead = prefs.runAhead && system != RetroSystem.N64
+        // Zurückspulen mit L2: nicht beim N64 (dort ist L2 die Z-Taste und der Kern zeichnet mit der Grafikkarte).
+        rewindOn = prefs.rewind && system != RetroSystem.N64
+        retroView.rewind = rewindOn
         lifecycle.addObserver(retroView)
 
         val root = FrameLayout(this).apply { setBackgroundColor(0xFF000000.toInt()) }
@@ -280,6 +283,8 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
 
     private suspend fun onFirstFrame() {
         started = true
+        playStart = android.os.SystemClock.elapsedRealtime()
+        if (rewindOn) DiagLog.add("Zurückspulen: an (L2 halten, etwa 10 Sekunden)")
         if (prefs.runAhead) {
             val ra = when {
                 !prefs.runAhead -> "aus"
@@ -662,7 +667,9 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
 
     private fun openMenu() {
         if (menuOpen || !started) return
+        flushPlayTime()
         menuOpen = true
+        playStart = 0L
         handler.removeCallbacks(comboRunnable)
         stopRumble()
         releaseAllInputs()
@@ -675,6 +682,7 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
     private fun closeMenu() {
         if (!menuOpen) return
         menuOpen = false
+        if (started) playStart = android.os.SystemClock.elapsedRealtime()
         menuLayer.visibility = View.GONE
         retroView.onResume()
         applyAudio()
@@ -749,6 +757,8 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
 
     override fun onPause() {
         super.onPause()
+        flushPlayTime()
+        playStart = 0L
         stopRumble()
         releaseAllInputs()
         saveAuto()
@@ -758,6 +768,7 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
         super.onResume()
         if (!::game.isInitialized) return
         mapping = prefs.mappingFor(system)
+        if (started && !menuOpen) playStart = android.os.SystemClock.elapsedRealtime()
         hideSystemUi()
         updateOverlayVisibility()
         if (menuOpen) handler.post { if (menuOpen) pauseRender() } else handler.post { applyAudio() }
@@ -887,8 +898,27 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
         retroView.sendKeyEvent(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, retroKey, port)
     }
 
+    private var rewindOn = false
+    private var rewindHeld = false
+    private var playStart = 0L
+
+    private fun setRewindHeld(held: Boolean) {
+        if (!rewindOn || held == rewindHeld) return
+        rewindHeld = held
+        retroView.setRewindHeld(held)
+    }
+
+    /** Spielzeit seit dem letzten Aufruf zum Spiel addieren. */
+    private fun flushPlayTime() {
+        if (playStart == 0L || !::game.isInitialized) return
+        val now = android.os.SystemClock.elapsedRealtime()
+        prefs.addPlaySeconds(system, game.saveKey, (now - playStart) / 1000)
+        playStart = if (menuOpen) 0L else now
+    }
+
     private fun releaseAllInputs() {
         if (!::retroView.isInitialized) return
+        setRewindHeld(false)
         for (id in heldRetro.toList()) {
             retroView.sendKeyEvent(KeyEvent.ACTION_UP, id and 0xFFFF, id shr 16)
         }
@@ -948,6 +978,10 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
         if (event.repeatCount > 0) return true
 
         trackCombo(code, down)
+        if (code == KeyEvent.KEYCODE_BUTTON_L2 && rewindOn) {
+            setRewindHeld(down)
+            return true
+        }
         val retro = mapping.retroKey(code) ?: return super.dispatchKeyEvent(event)
         sendRetroKey(portOf(event.device), retro, down)
         return true
@@ -1010,6 +1044,10 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
         val lt = maxOf(ev.getAxisValue(MotionEvent.AXIS_LTRIGGER), ev.getAxisValue(MotionEvent.AXIS_BRAKE))
         val rt = maxOf(ev.getAxisValue(MotionEvent.AXIS_RTRIGGER), ev.getAxisValue(MotionEvent.AXIS_GAS))
         for (edge in p.axisKeys.updateTriggers(lt, rt)) {
+            if (edge.keyCode == KeyEvent.KEYCODE_BUTTON_L2 && rewindOn) {
+                setRewindHeld(edge.down)
+                continue
+            }
             val retro = mapping.retroKey(edge.keyCode) ?: continue
             sendRetroKey(port, retro, edge.down)
         }

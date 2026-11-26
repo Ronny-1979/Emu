@@ -4,6 +4,8 @@
 #include <vector>
 #include "../../libretrodroid/src/main/cpp/runahead.h"
 #include "../../libretrodroid/src/main/cpp/framedelay.h"
+#include "../../libretrodroid/src/main/cpp/rewind.h"
+#include <random>
 
 using namespace libretrodroid;
 
@@ -159,7 +161,46 @@ static void testFrameDelay() {
     CHECK(s.delayMicros() == 0, "reset setzt zurück");
 }
 
+static void testRewind() {
+    // Zustand: 64 KB mit wenigen Änderungen pro Schritt.
+    const size_t size = 65536;
+    std::vector<std::vector<uint8_t>> history;
+    std::vector<uint8_t> state(size, 0);
+    std::mt19937 rng(42);
+    Rewind rw(200, 96u * 1024u * 1024u);
+    for (int i = 0; i < 300; i++) {
+        for (int k = 0; k < 20; k++) state[rng() % size] = (uint8_t) rng();
+        history.push_back(state);
+        rw.push(state.data(), size);
+    }
+    CHECK(rw.available() == 200, "Rewind: auf 200 Schritte begrenzt");
+    CHECK(rw.bytesUsed() < size * 4, "Rewind: wenig Speicher durch Unterschiede");
+    // Rückwärts abspielen: erst Zustand 298, dann 297, ...
+    std::vector<uint8_t> out;
+    bool ok = true;
+    for (int i = 298; i >= 100; i--) {
+        if (!rw.pop(out) || out != history[i]) { ok = false; break; }
+    }
+    CHECK(ok, "Rewind: Zustände stimmen beim Zurückspulen");
+    CHECK(rw.available() == 1, "Rewind: Rest nach 199 Schritten");
+    CHECK(rw.pop(out) && out == history[99], "Rewind: ältester Schritt");
+    CHECK(!rw.pop(out), "Rewind: danach leer");
+
+    // Größenänderung verwirft den Verlauf, Byte-Grenze wird eingehalten.
+    Rewind small(1000, 2000);
+    std::vector<uint8_t> a(4096, 0);
+    for (int i = 0; i < 50; i++) {
+        for (int k = 0; k < 200; k++) a[rng() % a.size()] = (uint8_t) rng();
+        small.push(a.data(), a.size());
+    }
+    CHECK(small.bytesUsed() <= 2000 + a.size(), "Rewind: Byte-Grenze");
+    std::vector<uint8_t> b(100, 7);
+    small.push(b.data(), b.size());
+    CHECK(small.available() == 0, "Rewind: Größenänderung leert Verlauf");
+}
+
 int main() {
+    testRewind();
     testAheadByOneFrame();
     testEffectEarlier();
     testNotSupported();

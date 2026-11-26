@@ -94,6 +94,7 @@ class SettingsActivity : Activity() {
 
         section("Eingabeverzögerung (gilt ab dem nächsten Spielstart)")
         toggle("Run-Ahead: Eingaben wirken ein Bild früher (nicht N64)", prefs.runAhead) { prefs.runAhead = it }
+        toggle("Zurückspulen: L2 halten, etwa 10 Sekunden (nicht N64)", prefs.rewind) { prefs.rewind = it }
 
         section("Nintendo 64 (gilt ab dem nächsten Spielstart)")
         choice("Auflösung", arrayOf("640x480 (schnell)", "960x720", "1280x960 (am schärfsten, braucht viel Leistung)"), prefs.n64Resolution) { prefs.n64Resolution = it }

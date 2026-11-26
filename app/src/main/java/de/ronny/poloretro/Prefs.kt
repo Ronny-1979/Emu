@@ -124,6 +124,20 @@ class Prefs(context: Context) {
 
     // ---- Favoriten und zuletzt gespielt (nach Dateiname) ----
 
+    /** Zurückspulen mit L2 (etwa 10 Sekunden). Nicht für N64. */
+    var rewind: Boolean
+        get() = sp.getBoolean("rewind", true)
+        set(v) = sp.edit().putBoolean("rewind", v).apply()
+
+    /** Gespielte Zeit je Spiel in Sekunden. */
+    fun playSeconds(system: RetroSystem, saveKey: String): Long = sp.getLong("play_${system.id}_$saveKey", 0L)
+
+    fun addPlaySeconds(system: RetroSystem, saveKey: String, seconds: Long) {
+        if (seconds <= 0) return
+        val key = "play_${system.id}_$saveKey"
+        sp.edit().putLong(key, sp.getLong(key, 0L) + seconds).apply()
+    }
+
     fun favorites(): Set<String> = HashSet(sp.getStringSet("favorites", emptySet()) ?: emptySet())
 
     fun toggleFavorite(key: String): Boolean {
