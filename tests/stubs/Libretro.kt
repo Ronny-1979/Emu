@@ -38,6 +38,7 @@ class GLRetroView(context: Context, private val data: GLRetroViewData) : GLSurfa
     fun rewindSteps(): Int = -1
     var shader: ShaderConfig = ShaderConfig.Default
     var viewport: RectF = RectF()
+    var aspectOverride: Float = 0f
     fun sendKeyEvent(action: Int, keyCode: Int, port: Int = 0) {}
     fun sendMotionEvent(source: Int, xAxis: Float, yAxis: Float, port: Int = 0) {}
     fun serializeState(useEmulationThread: Boolean = true): ByteArray = ByteArray(0)

@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.5.3
+- Neues Bildformat in den Einstellungen unter Bild und Ton: Original des Spiels, 4:3 oder ganzer Bildschirm (gestreckt). Gilt ab dem nächsten Spielstart. Kleine Änderung im nativen Teil (Seitenverhältnis überschreiben), nur über den CI-Bau geprüft.
+
 ## 0.5.2
 - Die Suche wird geleert, sobald man einen anderen Bereich oder eine Konsole wählt, ein Spiel startet oder in die App zurückkehrt.
 

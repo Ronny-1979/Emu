@@ -74,6 +74,8 @@ class SettingsActivity : Activity() {
         section("Bild und Ton")
         choice("Bildfilter", arrayOf("Standard (weich)", "Scharf", "CRT-Röhre", "LCD-Raster"), prefs.shader) { prefs.shader = it }
         note("Der Filter lässt sich im Spielmenü pro Spiel ändern.")
+        choice("Bildformat", arrayOf("Original des Spiels", "4:3 (wie früher am Fernseher)", "Ganzer Bildschirm (gestreckt)"), prefs.aspectMode) { prefs.aspectMode = it }
+        note("Das Bildformat gilt ab dem nächsten Spielstart.")
         toggle("Ton", prefs.soundOn) { prefs.soundOn = it }
         toggle("Bilder pro Sekunde anzeigen (zur Fehlersuche)", prefs.showFps) { prefs.showFps = it }
 

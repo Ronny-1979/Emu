@@ -113,6 +113,7 @@ public:
     void onTouchEvent(float xAxis, float yAxis);
 
     void refreshAspectRatio();
+    void setAspectOverride(float ratio);
     float getAspectRatio();
 
     bool requiresVideoRefresh() const;
@@ -196,6 +197,7 @@ private:
     ImmersiveMode::Config immersiveModeConfig {};
 
     float defaultAspectRatio = 1.0;
+    float aspectOverride = 0.0f;
     bool dirtyVideo = false;
 
     std::mutex coreLock;

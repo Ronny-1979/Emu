@@ -121,6 +121,7 @@ public class LibretroDroid {
     public static native void setShaderConfig(GLRetroShader shader);
     public static native void setViewport(float x, float y, float width, float height);
     public static native void setViewportAlignment(int viewportAlignment);
+    public static native void setAspectOverride(float ratio);
 
     public static native byte[] serializeState();
     public static native boolean unserializeState(byte[] state);

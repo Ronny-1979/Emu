@@ -91,6 +91,13 @@ class GLRetroView(
         }
     }
 
+    /** 0 = Seitenverhältnis des Kerns; sonst feste Breite/Höhe, die das Bild einnimmt. */
+    var aspectOverride: Float by Delegates.observable(0f) { _, _, value ->
+        runOnEmulationThread(true) {
+            LibretroDroid.setAspectOverride(value)
+        }
+    }
+
     var viewportAlignment: ViewportAlignment by Delegates.observable(ViewportAlignment.CENTER) { _, _, value ->
         LibretroDroid.setViewportAlignment(value.value)
     }

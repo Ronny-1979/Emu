@@ -138,6 +138,7 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
         // Zurückspulen mit L2: nicht beim N64 (dort ist L2 die Z-Taste und der Kern zeichnet mit der Grafikkarte).
         rewindOn = prefs.rewind && system != RetroSystem.N64
         retroView.rewind = rewindOn
+        applyAspectMode()
         lifecycle.addObserver(retroView)
 
         val root = FrameLayout(this).apply { setBackgroundColor(0xFF000000.toInt()) }
@@ -912,6 +913,23 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
         val changed = if (down) heldRetro.add(id) else heldRetro.remove(id)
         if (!changed) return
         retroView.sendKeyEvent(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, retroKey, port)
+    }
+
+    // Bildformat: 0 Original, 1 feste 4:3, 2 gestreckt auf den ganzen Bildschirm.
+    private fun applyAspectMode() {
+        when (prefs.aspectMode) {
+            1 -> retroView.aspectOverride = 4f / 3f
+            2 -> {
+                fun stretch() {
+                    val w = retroView.width
+                    val h = retroView.height
+                    if (w > 0 && h > 0) retroView.aspectOverride = w.toFloat() / h.toFloat()
+                }
+                retroView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> stretch() }
+                stretch()
+            }
+            else -> retroView.aspectOverride = 0f
+        }
     }
 
     private var rewindOn = false

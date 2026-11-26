@@ -125,6 +125,11 @@ class Prefs(context: Context) {
     // ---- Favoriten und zuletzt gespielt (nach Dateiname) ----
 
     /** Zurückspulen mit L2 (etwa 10 Sekunden). Nicht für N64. */
+    /** 0 = Original, 1 = 4:3, 2 = Ganzer Bildschirm (gestreckt) */
+    var aspectMode: Int
+        get() = sp.getInt("aspect_mode", 0).coerceIn(0, 2)
+        set(v) = sp.edit().putInt("aspect_mode", v.coerceIn(0, 2)).apply()
+
     var rewind: Boolean
         get() = sp.getBoolean("rewind", true)
         set(v) = sp.edit().putBoolean("rewind", v).apply()
