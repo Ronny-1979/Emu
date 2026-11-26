@@ -1,5 +1,9 @@
 # Änderungen
 
+## 0.4.9
+- Erkennung und Bereinigung von Dateinamen mit angehängter Prüfsumme wieder entfernt (0.4.8 zurückgenommen).
+- Neu: Einstellungen -> "Spiele löschen": erst Konsole wählen, dann einzelne Spiele ankreuzen oder "Alle auswählen". Gelöscht werden die Spiele auf dem Radio samt ihren Spielständen.
+
 ## 0.4.8
 - Dateinamen mit angehängter Prüfsumme (z. B. "Spiel (USA).MD.B362B705.339A8C9A...") werden erkannt: Die Konsole kommt aus der Endung vor den Prüfsummen, der Titel ohne sie. Beim Kopieren aufs Radio wird der Name bereinigt ("Spiel (USA).MD"). Zusätzlich liegt ein Skript bei, das Dateien auf dem PC umbenennt.
 

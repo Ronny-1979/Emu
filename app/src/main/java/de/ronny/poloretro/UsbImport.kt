@@ -196,7 +196,7 @@ object UsbImport {
         for ((index, source) in sources.withIndex()) {
             if (cancelled()) return Summary(copied, skipped, failed, true)
             progress(index, sources.size, source.name, bytes)
-            val target = File(destDir, RomNames.clean(safeName(source.name)))
+            val target = File(destDir, safeName(source.name))
             if (target.exists() && source.size >= 0 && target.length() == source.size) {
                 skipped++
                 continue

@@ -68,6 +68,14 @@ class SettingsActivity : Activity() {
             )
             finish()
         }), margins())
+        box.addView(Ui.button(this, "Spiele löschen (je Konsole, einzeln oder alle)", onClick = {
+            startActivity(
+                Intent(this, MainActivity::class.java)
+                    .putExtra(MainActivity.EXTRA_ACTION, MainActivity.ACTION_DELETE)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            )
+            finish()
+        }), margins())
         box.addView(Ui.button(this, "Steuerung (Controller belegen)", onClick = {
             startActivity(Intent(this, ControllerActivity::class.java))
         }), margins())

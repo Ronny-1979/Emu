@@ -239,16 +239,6 @@ fun main() {
     eq("ohne Ordner: lose Datei", UsbImport.scanFolder(stick3).size, 1)
 
 
-    // ---- Dateinamen mit angehängter Prüfsumme
-    val hashed = "BALLZ 3D - FIGHTING AT ITS BALLZIEST ~ BALLZ 3D - THE BATTLE OF THE BALLZ (USA, EUROPE).MD.B362B705.339A8C9A96FCDEDB2922B04BCC34F0D2.4825CB9245A701CC59900C57A7A5FA70EDC160F0"
-    eq("Hash-Name: Konsole", RomNames.systemFor(hashed), RetroSystem.MEGADRIVE)
-    eq("Hash-Name: sauber", RomNames.clean(hashed), "BALLZ 3D - FIGHTING AT ITS BALLZIEST ~ BALLZ 3D - THE BATTLE OF THE BALLZ (USA, EUROPE).MD")
-    eq("Hash-Name: Titel", RomNames.title(hashed), "BALLZ 3D - FIGHTING AT ITS BALLZIEST ~ BALLZ 3D - THE BATTLE OF THE BALLZ")
-    eq("Hash-Name: SMS", RomNames.systemFor("Alex Kidd (USA).SMS.AABBCCDD.00112233445566778899AABBCCDDEEFF"), RetroSystem.MASTERSYSTEM)
-    eq("normaler Name bleibt", RomNames.clean("Sonic.md"), "Sonic.md")
-    eq("nur Hash ohne Endung bleibt", RomNames.clean("notiz.12345678"), "notiz.12345678")
-    eq("Hash: Spielstand-Schluessel", RomNames.saveKey(File(tmp, "Sonic (USA).md.AABBCCDD")), "Sonic_USA_.md".let { RomNames.saveKey(File(tmp, "Sonic (USA).md")) })
-
     // ---- Unscharfe Titelbild-Suche
     val serverList = listOf(
         "Disney's Aladdin (Europe)", "Disney's Aladdin (USA)", "Aladdin II (Unl)", "Aladdin (Europe) (Beta)",

@@ -76,6 +76,7 @@ class MainActivity : Activity() {
         when (intent?.getStringExtra(EXTRA_ACTION)) {
             ACTION_IMPORT -> { intent.removeExtra(EXTRA_ACTION); startImport() }
             ACTION_PICK -> { intent.removeExtra(EXTRA_ACTION); pickFolder() }
+            ACTION_DELETE -> { intent.removeExtra(EXTRA_ACTION); deleteGames() }
         }
     }
 
@@ -526,6 +527,55 @@ class MainActivity : Activity() {
         }.setNegativeButton("Abbrechen", null).show()
     }
 
+    /** Spiele löschen: erst Konsole wählen, dann einzelne Spiele ankreuzen oder alle auswählen. */
+    private fun deleteGames() {
+        val local = allGames.filter { !it.external && it.file.exists() }
+        val systems = RetroSystem.values().filter { sys -> local.any { it.system == sys } }
+        if (systems.isEmpty()) {
+            Toast.makeText(this, "Keine Spiele auf dem Radio", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val names = systems.map { sys -> "${sys.label} (${local.count { it.system == sys }})" }.toTypedArray()
+        Ui.dialog(this).setTitle("Spiele löschen: Konsole wählen")
+            .setItems(names) { _, which -> deleteGamesOf(systems[which], local.filter { it.system == systems[which] }.sortedBy { it.title.lowercase() }) }
+            .setNegativeButton("Abbrechen", null)
+            .show()
+    }
+
+    private fun deleteGamesOf(system: RetroSystem, games: List<Game>) {
+        val titles = games.map { it.title }.toTypedArray()
+        val dialog = Ui.dialog(this).setTitle("${system.label}: Spiele zum Löschen wählen")
+            .setMultiChoiceItems(titles, BooleanArray(games.size), null)
+            .setPositiveButton("Löschen", null)
+            .setNeutralButton("Alle auswählen", null)
+            .setNegativeButton("Abbrechen", null)
+            .create()
+        dialog.show()
+        val lv = dialog.listView
+        var allOn = false
+        dialog.getButton(android.content.DialogInterface.BUTTON_NEUTRAL).setOnClickListener { b ->
+            allOn = !allOn
+            for (i in games.indices) lv.setItemChecked(i, allOn)
+            (b as Button).text = if (allOn) "Keine auswählen" else "Alle auswählen"
+        }
+        dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+            val chosen = games.indices.filter { lv.isItemChecked(it) }.map { games[it] }
+            if (chosen.isEmpty()) {
+                Toast.makeText(this, "Nichts ausgewählt", Toast.LENGTH_SHORT).show()
+            } else {
+                dialog.dismiss()
+                confirm("${chosen.size} Spiel(e) und ihre Spielstände von diesem Gerät löschen?") {
+                    for (g in chosen) {
+                        paths.deleteSaves(g)
+                        g.file.delete()
+                    }
+                    Toast.makeText(this, "${chosen.size} gelöscht", Toast.LENGTH_SHORT).show()
+                    refresh()
+                }
+            }
+        }
+    }
+
     private fun confirm(message: String, action: () -> Unit) {
         Ui.dialog(this).setMessage(message)
             .setPositiveButton("Ja") { _, _ -> action() }
@@ -854,6 +904,7 @@ class MainActivity : Activity() {
         const val EXTRA_ACTION = "action"
         const val ACTION_IMPORT = "import"
         const val ACTION_PICK = "pick"
+        const val ACTION_DELETE = "delete"
         private const val REQ_TREE = 4711
     }
 }
