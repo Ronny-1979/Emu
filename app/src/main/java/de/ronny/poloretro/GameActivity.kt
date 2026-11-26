@@ -387,8 +387,15 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
             column.addView(b, lp)
         }
 
+        fun heading(column: LinearLayout, text: String) {
+            column.addView(Ui.label(this, text, 12f, Ui.MUTED, true).apply {
+                setPadding(Ui.dp(this@GameActivity, 4), Ui.dp(this@GameActivity, 12), 0, 0)
+            })
+        }
+
         firstMenuButton = Ui.button(this, "Weiterspielen", Ui.ACCENT, 0xFF12161B.toInt(), onClick = { closeMenu() })
         add(left, firstMenuButton)
+        heading(left, "SPIELSTAND (● = belegt)")
 
         fun slotRow(title: String, list: MutableList<Button>, action: (Int) -> Unit): LinearLayout {
             val row = Ui.horizontal(this)
@@ -404,17 +411,26 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
         }
         add(left, slotRow("Speichern", saveButtons) { saveSlot(it) })
         add(left, slotRow("Laden", loadButtons) { loadSlot(it) })
+        heading(left, "SPIEL")
         add(left, Ui.button(this, "Spiel neu starten", onClick = { confirmReset() }))
         add(left, Ui.button(this, "Spiel beenden", Ui.DANGER, onClick = { exitGame() }))
 
         filterButton = Ui.button(this, "", onClick = { cycleFilter() })
         soundButton = Ui.button(this, "", onClick = { toggleSound() })
+        heading(right, "BILD UND TON")
         add(right, filterButton)
         add(right, soundButton)
-        add(right, Ui.button(this, "Cheats", onClick = { showCheats() }))
-        add(right, Ui.button(this, "Steuerung ändern (Controller)", onClick = {
+        heading(right, "STEUERUNG")
+        add(right, Ui.button(this, "Tasten belegen (Controller)", onClick = {
             startActivity(Intent(this, ControllerActivity::class.java).putExtra(ControllerActivity.EXTRA_SYSTEM, system.id))
         }))
+        if (rewindOn) {
+            add(right, Ui.label(this, "Zurückspulen: im Spiel L2 halten.", 13f, Ui.MUTED).apply {
+                setPadding(Ui.dp(this@GameActivity, 4), Ui.dp(this@GameActivity, 2), 0, 0)
+            })
+        }
+        heading(right, "EXTRAS")
+        add(right, Ui.button(this, "Cheats", onClick = { showCheats() }))
         if (system == RetroSystem.N64) {
             add(right, Ui.label(this, "N64-Auflösung, Bildverdopplung und Steckmodul (Speicherkarte/Rüttelmodul) stellst du in den Einstellungen ein (gilt ab dem nächsten Start).", 13f, Ui.MUTED).apply {
                 setPadding(0, Ui.dp(this@GameActivity, 6), 0, 0)

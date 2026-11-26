@@ -1,5 +1,9 @@
 # Änderungen
 
+## 0.5.1
+- Einstellungen neu geordnet nach Themen mit kurzen Erklärungen: Spiele, Titelbilder, Controller, Bild und Ton, Beim Spielen, Nintendo 64, Spielstände sichern, Fehlersuche. Technische Schalter (Audiofokus, schneller Audiomodus) stehen jetzt unter Fehlersuche. Alte gemerkte Ordner erscheinen nur noch, wenn es welche gibt.
+- Spielmenü mit Zwischenüberschriften (Spielstand, Spiel, Bild und Ton, Steuerung, Extras) und Hinweis auf L2 zum Zurückspulen.
+
 ## 0.5.0
 - Zurückspulen: L2 halten, das Spiel läuft bis zu etwa 10 Sekunden rückwärts. Es werden alle 3 Bilder Zustände gesichert, gespeichert wird nur der Unterschied (wenig Speicher). Nicht beim N64. In den Einstellungen abschaltbar. Neuer Code im nativen Teil (rewind.h, nur am PC mit Schein-Kern getestet).
 - Spielzeit: Die App zählt, wie lange jedes Spiel gespielt wurde, und zeigt es in der Liste und bei "Weiterspielen".

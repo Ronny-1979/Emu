@@ -13,7 +13,7 @@ import android.widget.TextView
 import java.io.File
 import kotlin.concurrent.thread
 
-/** Einstellungen: Touch-Tasten, Bild, N64, gemerkte Ordner, Sicherung der Spielstände, Protokoll. */
+/** Einstellungen, nach Themen sortiert: Spiele, Titelbilder, Controller, Bild und Ton, Spielen, N64, Sicherung, Fehlersuche. */
 class SettingsActivity : Activity() {
     private lateinit var prefs: Prefs
     private lateinit var paths: AppPaths
@@ -51,93 +51,98 @@ class SettingsActivity : Activity() {
         header.addView(Ui.button(this, "Fertig", onClick = { finish() }))
         box.addView(header)
 
-        section("Spiele und Controller")
-        box.addView(Ui.button(this, "USB-Import (Spiele vom Stick holen)", onClick = {
-            startActivity(
-                Intent(this, MainActivity::class.java)
-                    .putExtra(MainActivity.EXTRA_ACTION, MainActivity.ACTION_IMPORT)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            )
-            finish()
-        }), margins())
-        box.addView(Ui.button(this, "Ordner selbst auswählen (z. B. Roms auf dem Stick)", onClick = {
-            startActivity(
-                Intent(this, MainActivity::class.java)
-                    .putExtra(MainActivity.EXTRA_ACTION, MainActivity.ACTION_PICK)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            )
-            finish()
-        }), margins())
-        box.addView(Ui.button(this, "Spiele löschen (je Konsole, einzeln oder alle)", onClick = {
-            startActivity(
-                Intent(this, MainActivity::class.java)
-                    .putExtra(MainActivity.EXTRA_ACTION, MainActivity.ACTION_DELETE)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            )
-            finish()
-        }), margins())
-        box.addView(Ui.button(this, "Steuerung (Controller belegen)", onClick = {
-            startActivity(Intent(this, ControllerActivity::class.java))
-        }), margins())
+        // ---- 1. Spiele holen und verwalten
+        section("Spiele")
+        note("Spiele kommen per USB-Stick aufs Radio. Sie werden kopiert, danach wird der Stick nicht mehr gebraucht.")
+        action("USB-Import: Spiele vom Stick auf das Radio kopieren") { openMain(MainActivity.ACTION_IMPORT) }
+        action("Ordner selbst auswählen (z. B. Roms auf dem Stick)") { openMain(MainActivity.ACTION_PICK) }
+        action("Spiele löschen (je Konsole, einzeln oder alle)") { openMain(MainActivity.ACTION_DELETE) }
 
+        // ---- 2. Titelbilder
+        section("Titelbilder")
+        toggle("Automatisch laden (wenn das Radio online ist)", prefs.autoCovers) { prefs.autoCovers = it }
+        action("Titelbilder jetzt laden") { downloadCovers() }
+        note("Ein Bild wird nur gefunden, wenn der Dateiname dem üblichen Spielnamen entspricht, z. B. \"Super Mario World (USA).sfc\".")
+
+        // ---- 3. Controller und Steuerung
+        section("Controller")
+        action("Tasten belegen (Steuerung)") { startActivity(Intent(this, ControllerActivity::class.java)) }
+        toggle("Rütteln (Controller vibriert, ab dem nächsten Spielstart)", prefs.rumble) { prefs.rumble = it }
+        toggle("Mega Drive: 6-Tasten-Controller statt 3 Tasten", prefs.genesis6) { prefs.genesis6 = it }
+
+        // ---- 4. Bild und Ton
         section("Bild und Ton")
         choice("Bildfilter", arrayOf("Standard (weich)", "Scharf", "CRT-Röhre", "LCD-Raster"), prefs.shader) { prefs.shader = it }
-        toggle("Ton an", prefs.soundOn) { prefs.soundOn = it }
-        toggle("Audiofokus anfordern (Standard: aus, wie bei Lemuroid)", prefs.audioFocus) { prefs.audioFocus = it }
-        toggle("Schneller Audiomodus (bei Radio ohne Ton: aus lassen)", prefs.lowLatencyAudio) { prefs.lowLatencyAudio = it }
-        toggle("Bilder pro Sekunde anzeigen (Fehlersuche)", prefs.showFps) { prefs.showFps = it }
-        toggle("Controller rütteln (ab dem nächsten Spielstart)", prefs.rumble) { prefs.rumble = it }
+        note("Der Filter lässt sich im Spielmenü pro Spiel ändern.")
+        toggle("Ton", prefs.soundOn) { prefs.soundOn = it }
+        toggle("Bilder pro Sekunde anzeigen (zur Fehlersuche)", prefs.showFps) { prefs.showFps = it }
 
-        section("Spielen")
+        // ---- 5. Spielverhalten
+        section("Beim Spielen")
         toggle("Beim Start dort weitermachen, wo ich aufgehört habe", prefs.autoResume) { prefs.autoResume = it }
-        toggle("Mega Drive: 6-Tasten-Controller", prefs.genesis6) { prefs.genesis6 = it }
+        toggle("Zurückspulen: L2 halten, etwa 10 Sekunden zurück (nicht N64)", prefs.rewind) { prefs.rewind = it }
+        toggle("Run-Ahead: Tasten wirken ein Bild früher, weniger Verzögerung (nicht N64)", prefs.runAhead) { prefs.runAhead = it }
+        note("Zurückspulen und Run-Ahead gelten ab dem nächsten Spielstart. Beide brauchen etwas Rechenleistung.")
 
-        section("Eingabeverzögerung (gilt ab dem nächsten Spielstart)")
-        toggle("Run-Ahead: Eingaben wirken ein Bild früher (nicht N64)", prefs.runAhead) { prefs.runAhead = it }
-        toggle("Zurückspulen: L2 halten, etwa 10 Sekunden (nicht N64)", prefs.rewind) { prefs.rewind = it }
-
+        // ---- 6. Nintendo 64
         section("Nintendo 64 (gilt ab dem nächsten Spielstart)")
         choice("Auflösung", arrayOf("640x480 (schnell)", "960x720", "1280x960 (am schärfsten, braucht viel Leistung)"), prefs.n64Resolution) { prefs.n64Resolution = it }
         toggle("Bildverdopplung (ruhigeres Bild bei niedriger Leistung)", prefs.n64FrameDuping) { prefs.n64FrameDuping = it }
         choice("Steckmodul im Controller", arrayOf("Speicherkarte (Controller Pak)", "Rüttelmodul (Rumble Pak)", "Keins"), prefs.n64Pak) { prefs.n64Pak = it }
-        box.addView(note("Ein N64-Controller nimmt nur ein Modul auf: Speicherkarte oder Rüttelmodul. Spiele, die auf der Speicherkarte sichern, brauchen die Speicherkarte."))
+        note("Ein N64-Controller nimmt nur ein Modul auf. Spiele, die auf der Speicherkarte sichern, brauchen die Speicherkarte.")
 
-        section("Titelbilder")
-        toggle("Automatisch aus dem Internet laden (wenn online)", prefs.autoCovers) { prefs.autoCovers = it }
-        box.addView(Ui.button(this, "Titelbilder jetzt laden", onClick = { downloadCovers() }), margins())
-        box.addView(note("Quelle: thumbnails.libretro.com. Gefunden wird ein Bild nur, wenn der Dateiname dem üblichen Spielnamen entspricht, z. B. \"Super Mario World (USA).sfc\"."))
-
-        section("Gemerkte ROM-Ordner")
-        val folders = prefs.libraryFolders()
-        if (folders.isEmpty()) {
-            box.addView(note("Noch keine. Beim USB-Import kannst du \"Vom Stick spielen\" wählen, dann merkt sich die App den Ordner."))
-        }
-        for (f in folders) {
-            val row = Ui.horizontal(this)
-            row.addView(Ui.label(this, f, 15f, Ui.TEXT), Ui.weight())
-            row.addView(Ui.button(this, "Entfernen", Ui.DANGER, onClick = {
-                prefs.removeLibraryFolder(f)
-                rebuild()
-            }))
-            box.addView(row, margins())
-        }
-
+        // ---- 7. Spielstände
         section("Spielstände sichern")
-        box.addView(note("Spielstände liegen immer im Radio. Hier kannst du sie auf den USB-Stick sichern und von dort zurückholen."))
-        box.addView(Ui.button(this, "Auf USB-Stick sichern", onClick = { backup() }), margins())
-        box.addView(Ui.button(this, "Vom USB-Stick zurückholen", onClick = { restore() }), margins())
+        note("Spielstände liegen immer auf dem Radio. Hier sicherst du sie auf den USB-Stick und holst sie von dort zurück.")
+        action("Auf USB-Stick sichern") { backup() }
+        action("Vom USB-Stick zurückholen") { restore() }
 
-        section("Protokoll")
-        box.addView(Ui.button(this, "Protokoll anzeigen", onClick = { showLog() }), margins())
-        box.addView(Ui.button(this, "Protokoll teilen / per Mail senden", onClick = { shareLog() }), margins())
-        box.addView(Ui.button(this, "Protokoll auf USB-Stick speichern", onClick = { exportLog() }), margins())
-        box.addView(Ui.button(this, "Protokoll löschen", onClick = {
+        // ---- 8. Hilfe bei Problemen
+        section("Fehlersuche")
+        note("Das Protokoll hilft, wenn etwas nicht klappt, zum Beispiel der Stick nicht erkannt wird. Du kannst es mir per Mail oder Teilen schicken.")
+        action("Protokoll anzeigen") { showLog() }
+        action("Protokoll teilen / per Mail senden") { shareLog() }
+        action("Protokoll auf USB-Stick speichern") { exportLog() }
+        action("Protokoll löschen") {
             DiagLog.clear()
             toast("Protokoll gelöscht")
-        }), margins())
+        }
+        toggle("Audiofokus anfordern (nur bei Tonproblemen ändern)", prefs.audioFocus) { prefs.audioFocus = it }
+        toggle("Schneller Audiomodus (bei Radio ohne Ton: aus lassen)", prefs.lowLatencyAudio) { prefs.lowLatencyAudio = it }
+
+        // ---- Alte gemerkte Ordner (nur wenn es welche gibt)
+        val folders = prefs.libraryFolders()
+        if (folders.isNotEmpty()) {
+            section("Gemerkte Ordner (alt)")
+            note("Diese Ordner wurden früher für \"Vom Stick spielen\" gemerkt. Entferne sie, wenn du die Spiele aufs Radio kopiert hast.")
+            for (f in folders) {
+                val row = Ui.horizontal(this)
+                row.addView(Ui.label(this, f, 15f, Ui.TEXT), Ui.weight())
+                row.addView(Ui.button(this, "Entfernen", Ui.DANGER, onClick = {
+                    prefs.removeLibraryFolder(f)
+                    rebuild()
+                }))
+                box.addView(row, margins())
+            }
+        }
 
         section("Über")
-        box.addView(note("Zockpit ${BuildConfig.VERSION_NAME}\nKerne: snes9x, Genesis Plus GX, Mupen64Plus-Next (libretro, GPL) über LibretroDroid."))
+        note("Zockpit ${BuildConfig.VERSION_NAME}\nKerne: snes9x, Genesis Plus GX, Mupen64Plus-Next, FCEUmm, Gambatte, mGBA (libretro, GPL) über LibretroDroid.")
+    }
+
+    /** Knopf für eine Aktion. */
+    private fun action(title: String, onClick: () -> Unit) {
+        box.addView(Ui.button(this, title, onClick = onClick), margins())
+    }
+
+    /** Zur Startseite wechseln und dort eine Aktion starten. */
+    private fun openMain(actionName: String) {
+        startActivity(
+            Intent(this, MainActivity::class.java)
+                .putExtra(MainActivity.EXTRA_ACTION, actionName)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        )
+        finish()
     }
 
     // ---------------------------------------------------------------- Bausteine
@@ -153,8 +158,10 @@ class SettingsActivity : Activity() {
         })
     }
 
-    private fun note(text: String): TextView = Ui.label(this, text, 14f, Ui.MUTED).apply {
-        setPadding(0, Ui.dp(this@SettingsActivity, 4), 0, 0)
+    private fun note(text: String) {
+        box.addView(Ui.label(this, text, 14f, Ui.MUTED).apply {
+            setPadding(0, Ui.dp(this@SettingsActivity, 4), 0, 0)
+        })
     }
 
     private fun toast(text: String) = android.widget.Toast.makeText(this, text, android.widget.Toast.LENGTH_LONG).show()
