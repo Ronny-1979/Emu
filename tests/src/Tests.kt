@@ -245,6 +245,8 @@ fun main() {
         "Super Mario World (USA)", "Super Mario World (Europe)", "Super Mario World 2 - Yoshi's Island (USA)",
         "Tetris (World)", "Tetris Attack (USA)", "Sonic The Hedgehog (USA, Europe)", "Mario Kart 64 (Europe) (En,Fr,De)",
     )
+    eq("Match römische Zahl", CoverNames.bestMatch("GOLDEN AXE III (USA).MD", listOf("Golden Axe 3 (USA)", "Golden Axe (USA)")), "Golden Axe 3 (USA)")
+    eq("Match Unterstriche", CoverNames.bestMatch("Golden_Axe_2.SMD", listOf("Golden Axe II (World)", "Golden Axe (World)")), "Golden Axe II (World)")
     eq("Match Aladdin Europe", CoverNames.bestMatch("Aladdin (Europe).md", serverList), "Disney's Aladdin (Europe)")
     eq("Match Aladdin USA", CoverNames.bestMatch("aladdin (USA).md", serverList), "Disney's Aladdin (USA)")
     eq("Match Mario Europe", CoverNames.bestMatch("Super Mario World (Europe).sfc", serverList), "Super Mario World (Europe)")

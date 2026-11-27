@@ -66,6 +66,7 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
     // Menü-Beschriftungen, die sich ändern
     private lateinit var filterButton: Button
     private lateinit var soundButton: Button
+    private lateinit var aspectButton: Button
     private val saveButtons = ArrayList<Button>()
     private val loadButtons = ArrayList<Button>()
     private lateinit var firstMenuButton: Button
@@ -418,8 +419,10 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
 
         filterButton = Ui.button(this, "", onClick = { cycleFilter() })
         soundButton = Ui.button(this, "", onClick = { toggleSound() })
+        aspectButton = Ui.button(this, "", onClick = { cycleAspect() })
         heading(right, "BILD UND TON")
         add(right, filterButton)
+        add(right, aspectButton)
         add(right, soundButton)
         heading(right, "STEUERUNG")
         add(right, Ui.button(this, "Tasten belegen (Controller)", onClick = {
@@ -452,6 +455,7 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
         val own = prefs.gameShader(system, game.saveKey)
         filterButton.text = "Bildfilter (dieses Spiel): " +
             if (own < 0) "wie Einstellungen (${filters[prefs.shader]})" else filters[own]
+        aspectButton.text = "Bildformat: " + aspectNames[prefs.aspectMode]
         soundButton.text = "Ton: " + if (prefs.soundOn) "An" else "Aus"
         for (slot in 1..AppPaths.SLOTS) {
             val has = paths.slotStateFile(game, slot).let { it.exists() && it.length() > 0 }
@@ -915,21 +919,33 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
         retroView.sendKeyEvent(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, retroKey, port)
     }
 
-    // Bildformat: 0 Original, 1 feste 4:3, 2 gestreckt auf den ganzen Bildschirm.
+    // Bildformat: 0 Original, 1 feste 4:3, 2 gestreckt auf den ganzen Bildschirm. Wirkt sofort, auch aus dem Spielmenü.
+    private var aspectListenerSet = false
+
     private fun applyAspectMode() {
+        if (!aspectListenerSet) {
+            aspectListenerSet = true
+            retroView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> if (prefs.aspectMode == 2) stretchAspect() }
+        }
         when (prefs.aspectMode) {
             1 -> retroView.aspectOverride = 4f / 3f
-            2 -> {
-                fun stretch() {
-                    val w = retroView.width
-                    val h = retroView.height
-                    if (w > 0 && h > 0) retroView.aspectOverride = w.toFloat() / h.toFloat()
-                }
-                retroView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> stretch() }
-                stretch()
-            }
+            2 -> stretchAspect()
             else -> retroView.aspectOverride = 0f
         }
+    }
+
+    private fun stretchAspect() {
+        val w = retroView.width
+        val h = retroView.height
+        if (w > 0 && h > 0) retroView.aspectOverride = w.toFloat() / h.toFloat()
+    }
+
+    private val aspectNames = arrayOf("Original", "4:3", "Ganzer Bildschirm")
+
+    private fun cycleAspect() {
+        prefs.aspectMode = (prefs.aspectMode + 1) % aspectNames.size
+        applyAspectMode()
+        refreshMenuTexts()
     }
 
     private var rewindOn = false

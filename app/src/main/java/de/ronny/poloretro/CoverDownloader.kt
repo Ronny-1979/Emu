@@ -74,10 +74,14 @@ class CoverDownloader(private val paths: AppPaths) {
                 val names = indexes.getOrPut(game.system) { serverNames(game.system) }
                 val match = CoverNames.bestMatch(game.file.name, names)
                 if (match != null) {
-                    when (fetch(CoverNames.url(game.system, CoverNames.BOXART, match), File(paths.coverDirFor(game.system), game.saveKey + ".png"))) {
+                    val target = File(paths.coverDirFor(game.system), game.saveKey + ".png")
+                    // Die Liste stammt von GitHub, dort gibt es den Namen sicher; der libretro-Server ist nur die zweite Wahl.
+                    var res = fetch(CoverNames.githubUrl(game.system, CoverNames.BOXART, match), target)
+                    if (res != Fetch.OK) res = fetch(CoverNames.url(game.system, CoverNames.BOXART, match), target)
+                    when (res) {
                         Fetch.OK -> { ok = true; DiagLog.add("Titelbild: \"${game.file.name}\" -> \"$match\"") }
                         Fetch.ERROR -> anyError = true
-                        Fetch.NOT_FOUND -> {}
+                        Fetch.NOT_FOUND -> DiagLog.add("Titelbild: Treffer \"$match\" für \"${game.file.name}\", Bild aber nicht ladbar")
                     }
                 } else {
                     DiagLog.add("Titelbild: kein Treffer für \"${game.file.name}\" (${names.size} Einträge geprüft)")
@@ -151,7 +155,7 @@ class CoverDownloader(private val paths: AppPaths) {
         var addr = address
         if (useHttp && addr.startsWith("https://")) addr = "http://" + addr.removePrefix("https://")
         var r = get(addr, 3_000_000)
-        if (r.code == 404 && addr.startsWith("https://") && httpProbes < 2) {
+        if (r.code == 404 && addr.startsWith("https://") && !addr.contains("githubusercontent.com") && httpProbes < 2) {
             httpProbes++
             val alt = get("http://" + addr.removePrefix("https://"), 3_000_000)
             DiagLog.add("Titelbild: https lieferte 404, http-Probe: HTTP ${alt.code}")

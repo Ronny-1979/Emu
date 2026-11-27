@@ -72,9 +72,12 @@ object CoverNames {
         return if (cut > 0) name.substring(0, cut) else name
     }
 
+    private val ROMAN = mapOf("ii" to "2", "iii" to "3", "iv" to "4", "v" to "5", "vi" to "6", "vii" to "7", "viii" to "8", "ix" to "9", "x" to "10")
+
     private fun words(title: String): List<String> =
         title.lowercase().replace("'", "").replace("\u2019", "")
             .split(Regex("[^a-z0-9]+")).filter { it.isNotEmpty() && it !in NOISE_WORDS }
+            .map { ROMAN[it] ?: it }
 
     private fun tags(name: String): List<String> =
         Regex("\\(([^)]*)\\)").findAll(name).flatMap { it.groupValues[1].lowercase().split(',').map { t -> t.trim() } }.toList()

@@ -1,5 +1,9 @@
 # Änderungen
 
+## 0.5.4
+- Das Bildformat lässt sich jetzt auch im Spielmenü umschalten und wirkt sofort.
+- Titelbilder: Der gefundene Name wird zuerst bei GitHub geladen (dort stammt die Namensliste her), der libretro-Server ist nur noch zweite Wahl. Römische Zahlen im Namen (III = 3) werden beim Suchen erkannt. Die unnötige http-Probe bei GitHub entfällt. Ist ein Treffer da, das Bild aber nicht ladbar, steht das im Protokoll.
+
 ## 0.5.3
 - Neues Bildformat in den Einstellungen unter Bild und Ton: Original des Spiels, 4:3 oder ganzer Bildschirm (gestreckt). Gilt ab dem nächsten Spielstart. Kleine Änderung im nativen Teil (Seitenverhältnis überschreiben), nur über den CI-Bau geprüft.
 

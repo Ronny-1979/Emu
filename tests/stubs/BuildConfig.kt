@@ -1,2 +1,2 @@
 package de.ronny.poloretro
-object BuildConfig { const val VERSION_NAME = "0.5.3"; const val VERSION_CODE = 1 }
+object BuildConfig { const val VERSION_NAME = "0.5.4"; const val VERSION_CODE = 1 }
