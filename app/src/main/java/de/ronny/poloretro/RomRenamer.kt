@@ -3,7 +3,7 @@ package de.ronny.poloretro
 import java.io.File
 
 /**
- * Erkennt Mega-Drive-, Master-System- und Game-Gear-Spiele an der Prüfsumme (CRC32) und gibt ihnen den richtigen Namen.
+ * Erkennt Spiele aller Konsolen an der Prüfsumme (CRC32) und gibt ihnen den richtigen Namen.
  * Nur bei einem exakten Treffer in der Datenbank, es wird nichts geraten. Nur Dateien im App-Speicher (Kopien auf dem Radio),
  * nie Dateien auf dem USB-Stick. Spielstände, Titelbilder, Favoriten und Spielzeit ziehen mit um.
  */
@@ -20,23 +20,50 @@ class RomRenamer(private val paths: AppPaths, private val prefs: Prefs) {
         var renamed = 0
         val out = ArrayList<Game>(games.size)
         val dbs = HashMap<RetroSystem, Map<Long, String>?>()
+        val checked = loadChecked()
+        var changed = false
         for (g in games) {
             if (cancelled()) { out.add(g); continue }
-            val updated = try { renameOne(g, dbs.getOrPut(g.system) { if (g.system in RomDb.SYSTEMS) dbFor(g.system) else null }) } catch (_: Exception) { null }
+            val key = checkKey(g.file)
+            if (key != null && key in checked) { out.add(g); continue }
+            val db = dbs.getOrPut(g.system) { dbFor(g.system) }
+            val updated = try { renameOne(g, db) } catch (_: Exception) { null }
+            // Nur merken, wenn die Datenbank da war: ohne Datenbank wird beim nächsten Mal noch einmal geprüft.
+            if (db != null && db.isNotEmpty() && g.available && !g.external) {
+                val k = checkKey(updated?.file ?: g.file)
+                if (k != null) { checked.add(k); changed = true }
+            }
             if (updated != null) { out.add(updated); renamed++ } else out.add(g)
         }
+        if (changed) saveChecked(checked)
         return out to renamed
     }
 
+    // ---- Merkliste: schon geprüfte Dateien (Name|Größe|Datum), damit nicht bei jedem Lauf alles neu gerechnet wird ----
+
+    private val checkedFile: File get() = File(paths.baseDir, "rename_checked.txt")
+
+    private fun checkKey(f: File): String? = if (f.isFile) "${f.name}|${f.length()}|${f.lastModified()}" else null
+
+    private fun loadChecked(): MutableSet<String> = try {
+        if (checkedFile.isFile) checkedFile.readLines().filter { it.isNotBlank() }.toMutableSet() else mutableSetOf()
+    } catch (_: Exception) {
+        mutableSetOf()
+    }
+
+    private fun saveChecked(set: Set<String>) {
+        try { checkedFile.writeText(set.joinToString("\n")) } catch (_: Exception) { /* nicht schlimm */ }
+    }
+
     private fun renameOne(g: Game, db: Map<Long, String>?): Game? {
-        if (db == null || db.isEmpty() || g.system !in RomDb.SYSTEMS) return null
+        if (db == null || db.isEmpty()) return null
         if (!g.available || g.external || RomNames.isZip(g.file.name)) return null
         val file = g.file
-        if (!file.isFile || file.length() <= 0 || file.length() > RomDb.MAX_ROM_BYTES || !inAppFolder(file)) return null
-        val hit = RomId.identify(file, db) ?: return null
+        if (!file.isFile || file.length() <= 0 || !inAppFolder(file)) return null
+        val hit = RomId.identify(file, db, g.system) ?: return null
         val name = hit.name
-        // Glatte ROMs bekommen die übliche Endung; verschränkte .smd-Dateien behalten ihre Endung, weil der Inhalt so bleibt.
-        val ext = if (hit.plain) g.system.extensions.first() else RomNames.extension(file.name).ifEmpty { "smd" }
+        // Glatte Sega-ROMs bekommen die übliche Endung; alle anderen behalten ihre Endung, weil sie zum Inhalt gehört.
+        val ext = if (hit.canonicalExt) g.system.extensions.first() else RomNames.extension(file.name).ifEmpty { g.system.extensions.first() }
         val desired = CoverNames.fileName(name) + "." + ext
         if (desired == file.name) return null
         val target = File(file.parentFile, desired)

@@ -71,9 +71,9 @@ class CoverDownloader(private val paths: AppPaths) {
             var ok = false
             var anyError = false
             // Sega-Spiele: Der Name aus der Datenbank (per Prüfsumme) ist genauer als der Dateiname.
-            val exact = try { romDb(game.system)?.let { RomId.identify(game.file, it) } } catch (_: Exception) { null }
+            val exact = try { romDb(game.system)?.let { RomId.identify(game.file, it, game.system) } } catch (_: Exception) { null }
             val coverName = if (exact != null) exact.name + "." + game.system.extensions.first() else game.file.name
-            if (exact != null && !exact.plain) DiagLog.add("Titelbild: \"${game.file.name}\" erkannt als \"${exact.name}\" (Prüfsumme)")
+            if (exact != null && exact.name != game.file.name.substringBeforeLast('.')) DiagLog.add("Titelbild: \"${game.file.name}\" erkannt als \"${exact.name}\" (Prüfsumme)")
             for (url in CoverNames.candidates(game.system, coverName)) {
                 if (cancelled()) break
                 when (fetch(url, File(paths.coverDirFor(game.system), game.saveKey + ".png"))) {
@@ -123,7 +123,6 @@ class CoverDownloader(private val paths: AppPaths) {
 
     /** Namen und Prüfsummen der Konsole aus der libretro-Datenbank (einmal geladen, 90 Tage gemerkt). Null ohne Netz und ohne Zwischenspeicher. */
     fun romDb(system: RetroSystem): Map<Long, String>? {
-        if (system !in RomDb.SYSTEMS) return null
         return rdbCache.getOrPut(system) { loadRomDb(system) }
     }
 

@@ -10,11 +10,11 @@ import java.util.zip.CRC32
  * Aufbau: "RARCHDB\0", 8 Byte Länge des Datenteils, dann je Spiel ein MessagePack-Eintrag (Name, Größe, CRC, MD5, SHA1 ...).
  */
 object RomDb {
-    /** Konsolen, bei denen Spiele über die Prüfsumme erkannt und umbenannt werden (ROM-Dateien ohne Kopfteil). */
-    val SYSTEMS = setOf(RetroSystem.MEGADRIVE, RetroSystem.MASTERSYSTEM, RetroSystem.GAMEGEAR)
+    /** Alle Konsolen der App haben eine Datenbank (Dateiname = Ordnername der Titelbilder). */
+    val SYSTEMS: Set<RetroSystem> = RetroSystem.values().toSet()
 
-    /** Größere Dateien werden nicht geprüft (Sega-Module sind höchstens ein paar MB groß). */
-    const val MAX_ROM_BYTES = 16L * 1024 * 1024
+    /** Größere Dateien werden nicht geprüft. N64-Spiele sind bis 64 MB groß, alles andere höchstens ein paar MB. */
+    fun maxBytes(system: RetroSystem): Long = if (system == RetroSystem.N64) 100L * 1024 * 1024 else 16L * 1024 * 1024
 
     /** CRC32 -> Spielname. Leer, wenn die Datei kein gültiges RDB ist. */
     fun parse(data: ByteArray): Map<Long, String> {
@@ -43,9 +43,16 @@ object RomDb {
         return out
     }
 
-    fun crc32(file: File): Long {
+    /** CRC32 der Datei, die ersten [skip] Bytes (Kopfteil) werden übersprungen. */
+    fun crc32(file: File, skip: Long = 0): Long {
         val crc = CRC32()
         file.inputStream().use { input ->
+            var left = skip
+            while (left > 0) {
+                val s = input.skip(left)
+                if (s <= 0) break
+                left -= s
+            }
             val buf = ByteArray(64 * 1024)
             while (true) {
                 val n = input.read(buf)
@@ -112,15 +119,42 @@ object RomDb {
 
 /** Erkennung einer ROM-Datei über die Datenbank. */
 object RomId {
-    /** Richtiger Name und ob die Datei unverändert (ohne Kopfteil) vorliegt, sonst null. */
-    class Hit(val name: String, val plain: Boolean)
+    private val SEGA = setOf(RetroSystem.MEGADRIVE, RetroSystem.MASTERSYSTEM, RetroSystem.GAMEGEAR)
 
-    fun identify(file: File, db: Map<Long, String>): Hit? {
-        if (!file.isFile || file.length() <= 0 || file.length() > RomDb.MAX_ROM_BYTES) return null
-        db[RomDb.crc32(file)]?.let { return Hit(it, true) }
-        // .smd-Dateien (Kopierer-Format): 512 Byte Vorspann, Blöcke verschränkt. Erst auspacken, dann prüfen.
-        val crc = smdCrc(file) ?: return null
-        return db[crc]?.let { Hit(it, false) }
+    /**
+     * Richtiger Name. [canonicalExt] ist true, wenn die Datei auf die übliche Endung der Konsole umbenannt werden darf
+     * (glatte Sega-ROMs); sonst bleibt die Endung, weil sie zum Inhalt gehört (.smd, .sfc/.smc, N64-Byte-Reihenfolge).
+     */
+    class Hit(val name: String, val canonicalExt: Boolean)
+
+    fun identify(file: File, db: Map<Long, String>, system: RetroSystem): Hit? {
+        val size = file.length()
+        if (!file.isFile || size <= 0 || size > RomDb.maxBytes(system)) return null
+        // 1. Datei so, wie sie ist (No-Intro-Prüfsummen; bei N64 stehen alle drei Byte-Reihenfolgen in der Datenbank).
+        db[RomDb.crc32(file)]?.let { return Hit(it, system in SEGA) }
+        // 2. Varianten mit Kopfteil: Die Datenbank kennt nur die Prüfsumme ohne den Vorspann.
+        when (system) {
+            RetroSystem.SNES ->
+                // Kopierer-Vorspann (512 Byte): Dateigröße ist dann 512 mehr als ein Vielfaches von 1024.
+                if (size % 1024 == 512L) db[RomDb.crc32(file, 512)]?.let { return Hit(it, false) }
+            RetroSystem.NES ->
+                if (size > 16 && hasInesHeader(file)) db[RomDb.crc32(file, 16)]?.let { return Hit(it, false) }
+            RetroSystem.MEGADRIVE -> {
+                val crc = if (size <= 8L * 1024 * 1024) smdCrc(file) else null
+                if (crc != null) db[crc]?.let { return Hit(it, false) }
+            }
+            else -> {}
+        }
+        return null
+    }
+
+    private fun hasInesHeader(file: File): Boolean = try {
+        file.inputStream().use { input ->
+            val b = ByteArray(4)
+            input.read(b) == 4 && b[0] == 'N'.code.toByte() && b[1] == 'E'.code.toByte() && b[2] == 'S'.code.toByte() && b[3] == 0x1A.toByte()
+        }
+    } catch (_: Exception) {
+        false
     }
 
     /** CRC32 einer .smd-Datei nach dem Entschränken, oder null, wenn die Datei kein .smd-Format hat. */

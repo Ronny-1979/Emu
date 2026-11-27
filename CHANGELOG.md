@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.5.7
+- Das richtige Benennen per Prüfsumme gilt jetzt für alle Konsolen (SNES, NES, N64, Game Boy, GBC, GBA, Mega Drive, Master System, Game Gear). SNES-Dateien mit Kopierer-Vorspann und NES-Dateien mit iNES-Kopf werden auch erkannt, N64 in allen drei Byte-Reihenfolgen. Die Endung bleibt, außer bei glatten Sega-ROMs. Schon geprüfte Dateien werden gemerkt und nicht bei jedem Lauf neu gerechnet.
+
 ## 0.5.6
 - Auch verschränkte .smd-Dateien (z. B. marblem.smd) bekommen jetzt den richtigen Namen aus der Datenbank, sie behalten die Endung .smd.
 

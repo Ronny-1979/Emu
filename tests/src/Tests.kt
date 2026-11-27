@@ -297,6 +297,24 @@ fun main() {
         eq("RDB echt: Sonic 1", real[0xF9394E97L], "Sonic The Hedgehog (USA, Europe)")
         check("RDB echt: viele Einträge", real.size > 6000)
     }
+    // Erkennung über Prüfsumme: SNES mit Kopierer-Vorspann, NES mit iNES-Kopf
+    run {
+        val dir = java.nio.file.Files.createTempDirectory("rdbtest").toFile()
+        val rom = ByteArray(2048) { i -> ((i * 13 + 5) and 0xFF).toByte() }
+        fun crcOf(b: ByteArray) = java.util.zip.CRC32().also { it.update(b) }.value
+        val snes = File(dir, "x.smc").also { it.writeBytes(ByteArray(512) + rom) }
+        val h1 = RomId.identify(snes, mapOf(crcOf(rom) to "Testspiel (Europe)"), RetroSystem.SNES)
+        eq("SNES Vorspann", h1?.name, "Testspiel (Europe)")
+        eq("SNES Endung bleibt", h1?.canonicalExt, false)
+        val ines = byteArrayOf('N'.code.toByte(), 'E'.code.toByte(), 'S'.code.toByte(), 0x1A) + ByteArray(12)
+        val nes = File(dir, "y.nes").also { it.writeBytes(ines + rom) }
+        eq("NES ohne Kopf", RomId.identify(nes, mapOf(crcOf(rom) to "Nes Spiel (USA)"), RetroSystem.NES)?.name, "Nes Spiel (USA)")
+        eq("NES mit Kopf", RomId.identify(nes, mapOf(crcOf(ines + rom) to "Nes Spiel (USA)"), RetroSystem.NES)?.name, "Nes Spiel (USA)")
+        val md = File(dir, "z.bin").also { it.writeBytes(rom) }
+        eq("MD glatt", RomId.identify(md, mapOf(crcOf(rom) to "Mega Spiel (World)"), RetroSystem.MEGADRIVE)?.canonicalExt, true)
+        eq("Unbekannt", RomId.identify(md, mapOf(1L to "Anderes"), RetroSystem.MEGADRIVE), null)
+        dir.deleteRecursively()
+    }
     eq("Match römische Zahl", CoverNames.bestMatch("GOLDEN AXE III (USA).MD", listOf("Golden Axe 3 (USA)", "Golden Axe (USA)")), "Golden Axe 3 (USA)")
     eq("Match Unterstriche", CoverNames.bestMatch("Golden_Axe_2.SMD", listOf("Golden Axe II (World)", "Golden Axe (World)")), "Golden Axe II (World)")
     eq("Match Aladdin Europe", CoverNames.bestMatch("Aladdin (Europe).md", serverList), "Disney's Aladdin (Europe)")
