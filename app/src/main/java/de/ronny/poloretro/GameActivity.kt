@@ -247,11 +247,32 @@ class GameActivity : ComponentActivity(), TouchOverlayView.Listener {
     /** ZIP wird ausgepackt, alles andere direkt benutzt. Null, wenn die Datei nicht nutzbar ist. */
     private fun prepareRom(file: File): File? {
         if (!file.exists() || !file.canRead()) return null
-        if (!RomNames.isZip(file.name)) return file
+        if (!RomNames.isZip(file.name)) return withRightExtension(file)
         val dir = paths.tempRomDir
         dir.listFiles()?.forEach { it.delete() }
         val extracted = ZipRom.extract(file, dir) ?: return null
         return if (extracted.second == system) extracted.first else null
+    }
+
+    /**
+     * Der Sega-Core (Genesis Plus GX) erkennt Master System und Game Gear an den letzten drei Zeichen des Dateipfads.
+     * Passt die Endung nicht zur erkannten Konsole (z. B. ein Master-System-Spiel als ".bin"), geht eine Kopie mit richtiger Endung an den Core.
+     */
+    private fun withRightExtension(file: File): File {
+        val ext = RomNames.extension(file.name)
+        if (ext in system.extensions) return file
+        if (system != RetroSystem.MASTERSYSTEM && system != RetroSystem.GAMEGEAR && system != RetroSystem.MEGADRIVE) return file
+        return try {
+            val dir = paths.tempRomDir
+            dir.listFiles()?.forEach { it.delete() }
+            val base = file.name.substringBeforeLast('.', file.name).replace(Regex("[^A-Za-z0-9._ -]"), "_").take(80)
+            val target = File(dir, base + "." + system.extensions.first())
+            file.copyTo(target, overwrite = true)
+            DiagLog.add("Endung \".$ext\" passt nicht zu ${system.label}, Kopie als ${target.name}")
+            target
+        } catch (_: Exception) {
+            file
+        }
     }
 
     private fun coreVariables(): Array<Variable> {

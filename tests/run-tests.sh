@@ -10,6 +10,6 @@ OUT=$(mktemp -d)
 java -cp "$CP" org.jetbrains.kotlin.cli.jvm.K2JVMCompiler -no-stdlib -no-reflect -jvm-target 17 \
   -cp "$ANDROID:$L/kotlin-stdlib-2.0.21.jar" -d "$OUT" \
   "$HERE/src/Tests.kt" "$HERE/stubs/BuildConfig.kt" \
-  "$SRC/RomNames.kt" "$SRC/RetroSystem.kt" "$SRC/ZipRom.kt" "$SRC/ControllerMapping.kt" "$SRC/SaveBackup.kt" "$SRC/UsbImport.kt" "$SRC/DiagLog.kt" "$SRC/CheatStore.kt" "$SRC/CoverNames.kt" "$SRC/PadInput.kt" \
+  "$SRC/RomNames.kt" "$SRC/RetroSystem.kt" "$SRC/ZipRom.kt" "$SRC/ControllerMapping.kt" "$SRC/SaveBackup.kt" "$SRC/UsbImport.kt" "$SRC/DiagLog.kt" "$SRC/CheatStore.kt" "$SRC/CoverNames.kt" "$SRC/PadInput.kt" "$SRC/RomDb.kt" "$SRC/RomSniffer.kt" \
   2>&1 | grep -v "^warning: \|^Picked up" || true
 java -cp "$OUT:$L/kotlin-stdlib-2.0.21.jar:$ANDROID" de.ronny.poloretro.TestsKt 2>&1 | grep -v "^Picked up"

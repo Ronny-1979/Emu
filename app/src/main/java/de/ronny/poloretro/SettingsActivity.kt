@@ -109,8 +109,6 @@ class SettingsActivity : Activity() {
             DiagLog.clear()
             toast("Protokoll gelöscht")
         }
-        toggle("Audiofokus anfordern (nur bei Tonproblemen ändern)", prefs.audioFocus) { prefs.audioFocus = it }
-        toggle("Schneller Audiomodus (bei Radio ohne Ton: aus lassen)", prefs.lowLatencyAudio) { prefs.lowLatencyAudio = it }
 
         // ---- Alte gemerkte Ordner (nur wenn es welche gibt)
         val folders = prefs.libraryFolders()

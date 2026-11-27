@@ -9,7 +9,7 @@ import java.net.URL
 class CoverDownloader(private val paths: AppPaths) {
     enum class Fetch { OK, NOT_FOUND, ERROR }
 
-    class Result(val found: Int, val missing: Int, val errors: Int, val alreadyThere: Int, val cancelled: Boolean)
+    class Result(val found: Int, val missing: Int, val errors: Int, val alreadyThere: Int, val cancelled: Boolean, val renamed: Int = 0)
 
     private val missingFile: File get() = File(paths.coverDir, ".missing")
 
@@ -37,12 +37,23 @@ class CoverDownloader(private val paths: AppPaths) {
      * [maxGames]: höchstens so viele Spiele je Lauf (damit der Start nicht ewig dauert); der Rest folgt beim nächsten Lauf.
      */
     fun run(
-        games: List<Game>,
+        gamesIn: List<Game>,
         retryMissing: Boolean,
         maxGames: Int,
         progress: (done: Int, total: Int, title: String) -> Unit,
         cancelled: () -> Boolean,
     ): Result {
+        // Zuerst richtig benennen (Sega-Spiele per Prüfsumme), danach passen die Namen zu den Titelbildern.
+        var games = gamesIn
+        var renamedCount = 0
+        try {
+            val (renamedList, n) = RomRenamer(paths, Prefs(paths.context)).renameAll(gamesIn, { romDb(it) }, cancelled)
+            games = renamedList
+            renamedCount = n
+            if (n > 0) DiagLog.add("Spiele richtig benannt: $n")
+        } catch (t: Throwable) {
+            DiagLog.add("Umbenennen: ${t.javaClass.simpleName}: ${t.message}")
+        }
         val missing = loadMissing()
         val todo = games.filter { it.available && !hasCover(it) && (retryMissing || "${it.system.id}/${it.saveKey}" !in missing) }
         val alreadyThere = games.count { it.available && hasCover(it) }
@@ -59,7 +70,11 @@ class CoverDownloader(private val paths: AppPaths) {
             progress(i, list.size, game.title)
             var ok = false
             var anyError = false
-            for (url in CoverNames.candidates(game.system, game.file.name)) {
+            // Sega-Spiele: Der Name aus der Datenbank (per Prüfsumme) ist genauer als der Dateiname.
+            val exact = try { romDb(game.system)?.let { RomId.identify(game.file, it) } } catch (_: Exception) { null }
+            val coverName = if (exact != null) exact.name + "." + game.system.extensions.first() else game.file.name
+            if (exact != null && !exact.plain) DiagLog.add("Titelbild: \"${game.file.name}\" erkannt als \"${exact.name}\" (Prüfsumme)")
+            for (url in CoverNames.candidates(game.system, coverName)) {
                 if (cancelled()) break
                 when (fetch(url, File(paths.coverDirFor(game.system), game.saveKey + ".png"))) {
                     Fetch.OK -> { ok = true }
@@ -101,7 +116,36 @@ class CoverDownloader(private val paths: AppPaths) {
         saveMissing(missing)
         progress(list.size, list.size, "")
         DiagLog.add("Titelbilder: $found geladen, $notFound beim Server nicht vorhanden, $errors Netzfehler")
-        return Result(found, notFound, errors, alreadyThere, wasCancelled)
+        return Result(found, notFound, errors, alreadyThere, wasCancelled, renamedCount)
+    }
+
+    private val rdbCache = HashMap<RetroSystem, Map<Long, String>?>()
+
+    /** Namen und Prüfsummen der Konsole aus der libretro-Datenbank (einmal geladen, 90 Tage gemerkt). Null ohne Netz und ohne Zwischenspeicher. */
+    fun romDb(system: RetroSystem): Map<Long, String>? {
+        if (system !in RomDb.SYSTEMS) return null
+        return rdbCache.getOrPut(system) { loadRomDb(system) }
+    }
+
+    private fun loadRomDb(system: RetroSystem): Map<Long, String>? {
+        val cache = File(paths.coverDirFor(system), ".rdb")
+        val cached = try { if (cache.isFile) RomDb.parse(cache.readBytes()) else emptyMap() } catch (_: Exception) { emptyMap() }
+        val fresh = cache.isFile && System.currentTimeMillis() - cache.lastModified() < 90L * 24 * 3600 * 1000
+        if (fresh && cached.isNotEmpty()) return cached
+        val url = "https://raw.githubusercontent.com/libretro/libretro-database/master/rdb/" +
+            java.net.URLEncoder.encode(system.thumbFolder, "UTF-8").replace("+", "%20") + ".rdb"
+        val r = get(url, 16_000_000)
+        val bytes = r.bytes
+        if (r.code == 200 && bytes != null) {
+            val map = RomDb.parse(bytes)
+            if (map.isNotEmpty()) {
+                try { cache.writeBytes(bytes) } catch (_: Exception) { /* egal */ }
+                DiagLog.add("Datenbank ${system.shortLabel}: ${map.size} Spiele")
+                return map
+            }
+        }
+        DiagLog.add("Datenbank ${system.shortLabel} nicht ladbar (HTTP ${r.code})")
+        return cached.ifEmpty { null }
     }
 
     private var netErrorsLogged = 0

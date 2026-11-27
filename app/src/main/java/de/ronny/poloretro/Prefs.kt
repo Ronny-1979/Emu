@@ -77,14 +77,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("show_fps", false)
         set(v) = sp.edit().putBoolean("show_fps", v).apply()
 
-    var audioFocus: Boolean
-        get() = sp.getBoolean("audio_focus2", false)
-        set(v) = sp.edit().putBoolean("audio_focus2", v).apply()
+    /** Audiofokus wird immer angefordert (so läuft der Ton auf dem Radio). */
+    val audioFocus: Boolean get() = true
 
-    /** Schneller Audiomodus (kleine Verzögerung). Manche Radios geben damit keinen Ton aus, darum standardmäßig aus. */
-    var lowLatencyAudio: Boolean
-        get() = sp.getBoolean("low_latency_audio", false)
-        set(v) = sp.edit().putBoolean("low_latency_audio", v).apply()
+    /** Der schnelle Audiomodus bleibt aus, manche Radios geben damit keinen Ton aus. */
+    val lowLatencyAudio: Boolean get() = false
 
     var soundOn: Boolean
         get() = sp.getBoolean("sound", true)
@@ -141,6 +138,31 @@ class Prefs(context: Context) {
         if (seconds <= 0) return
         val key = "play_${system.id}_$saveKey"
         sp.edit().putLong(key, sp.getLong(key, 0L) + seconds).apply()
+    }
+
+    /** Ein Spiel hat einen neuen Dateinamen: Favorit, zuletzt gespielt, Spielzeit und eigener Bildfilter ziehen um. */
+    fun renameGameKeys(system: RetroSystem, oldName: String, oldKey: String, newName: String, newKey: String) {
+        val e = sp.edit()
+        val fav = favorites()
+        if (oldName in fav) e.putStringSet("favorites", (fav - oldName + newName).toSet())
+        val rec = recents()
+        if (oldName in rec) e.putString("recents", rec.map { if (it == oldName) newName else it }.distinct().joinToString("\n"))
+        if (oldKey != newKey) {
+            for (prefix in listOf("play_", "gshader_")) {
+                val from = prefix + system.id + "_" + oldKey
+                val all = sp.all
+                for ((k, v) in all) {
+                    if (k == from) {
+                        when (v) {
+                            is Long -> e.putLong(prefix + system.id + "_" + newKey, v)
+                            is Int -> e.putInt(prefix + system.id + "_" + newKey, v)
+                        }
+                        e.remove(k)
+                    }
+                }
+            }
+        }
+        e.apply()
     }
 
     fun favorites(): Set<String> = HashSet(sp.getStringSet("favorites", emptySet()) ?: emptySet())

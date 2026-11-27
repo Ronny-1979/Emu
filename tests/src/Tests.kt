@@ -245,6 +245,58 @@ fun main() {
         "Super Mario World (USA)", "Super Mario World (Europe)", "Super Mario World 2 - Yoshi's Island (USA)",
         "Tetris (World)", "Tetris Attack (USA)", "Sonic The Hedgehog (USA, Europe)", "Mario Kart 64 (Europe) (En,Fr,De)",
     )
+    // RDB-Datenbank: Aufbau nachgebaut (Kopf, ein Eintrag mit Name und CRC, ein Eintrag ohne CRC)
+    run {
+        fun str(s: String): ByteArray = byteArrayOf(0xD9.toByte(), s.length.toByte()) + s.toByteArray()
+        val entry = byteArrayOf(0x82.toByte()) + byteArrayOf(0xA4.toByte()) + "name".toByteArray() + str("Sonic The Hedgehog (USA, Europe)") +
+            byteArrayOf(0xA3.toByte()) + "crc".toByteArray() + byteArrayOf(0xC4.toByte(), 4, 0xF9.toByte(), 0x39, 0x4E, 0x97.toByte())
+        val noCrc = byteArrayOf(0x81.toByte()) + byteArrayOf(0xA4.toByte()) + "name".toByteArray() + str("Ohne Pruefsumme")
+        val body = entry + noCrc
+        val end = 16L + body.size
+        val head = "RARCHDB".toByteArray() + byteArrayOf(0) + ByteArray(8) { i -> ((end shr (8 * (7 - i))) and 0xFF).toByte() }
+        val db = RomDb.parse(head + body)
+        eq("RDB Anzahl", db.size, 1)
+        eq("RDB Sonic", db[0xF9394E97L], "Sonic The Hedgehog (USA, Europe)")
+        eq("RDB kaputt", RomDb.parse(ByteArray(5)).size, 0)
+    }
+    // .smd-Entschränkung: erst verschränken, dann muss dieselbe Prüfsumme herauskommen wie von der glatten Datei
+    run {
+        val plain = ByteArray(2 * 16384) { i -> ((i * 31 + i / 7) and 0xFF).toByte() }
+        val raw = ByteArray(512 + plain.size)
+        raw[8] = 0xAA.toByte(); raw[9] = 0xBB.toByte()
+        var blk = 0
+        while (blk < plain.size) {
+            for (j in 0 until 8192) {
+                raw[512 + blk + j] = plain[blk + 2 * j + 1]
+                raw[512 + blk + 8192 + j] = plain[blk + 2 * j]
+            }
+            blk += 16384
+        }
+        val c = java.util.zip.CRC32().also { it.update(plain) }.value
+        eq("SMD Prüfsumme", RomId.smdCrc(raw), c)
+        eq("SMD ohne Kennung", RomId.smdCrc(ByteArray(40000)), null)
+    }
+    fun hdr(size: Int = RomSniffer.HEADER_BYTES) = ByteArray(size)
+    val mdHdr = hdr().also { "SEGA MEGA DRIVE".toByteArray().copyInto(it, 0x100) }
+    val smsHdr = hdr().also { "TMR SEGA".toByteArray().copyInto(it, 0x7FF0); it[0x7FFF] = 0x4C }
+    val ggHdr = hdr().also { "TMR SEGA".toByteArray().copyInto(it, 0x7FF0); it[0x7FFF] = 0x6C }
+    val sms16 = hdr().also { "TMR SEGA".toByteArray().copyInto(it, 0x3FF0); it[0x3FFF] = 0x4C }
+    val smdHdr = hdr().also { it[8] = 0xAA.toByte(); it[9] = 0xBB.toByte() }
+    eq("Sniffer MD als bin", RomSniffer.refine(RetroSystem.MEGADRIVE, mdHdr), RetroSystem.MEGADRIVE)
+    eq("Sniffer SMS als bin", RomSniffer.refine(RetroSystem.MEGADRIVE, smsHdr), RetroSystem.MASTERSYSTEM)
+    eq("Sniffer SMS 16KB", RomSniffer.refine(RetroSystem.MEGADRIVE, sms16), RetroSystem.MASTERSYSTEM)
+    eq("Sniffer GG als md", RomSniffer.refine(RetroSystem.MEGADRIVE, ggHdr), RetroSystem.GAMEGEAR)
+    eq("Sniffer MD als sms", RomSniffer.refine(RetroSystem.MASTERSYSTEM, mdHdr), RetroSystem.MEGADRIVE)
+    eq("Sniffer smd verschränkt", RomSniffer.refine(RetroSystem.MEGADRIVE, smdHdr), RetroSystem.MEGADRIVE)
+    eq("Sniffer unbekannt bleibt", RomSniffer.refine(RetroSystem.MASTERSYSTEM, hdr()), RetroSystem.MASTERSYSTEM)
+    eq("Sniffer SNES bleibt", RomSniffer.refine(RetroSystem.SNES, smsHdr), RetroSystem.SNES)
+    eq("Sniffer kurze Datei", RomSniffer.refine(RetroSystem.MEGADRIVE, ByteArray(10)), RetroSystem.MEGADRIVE)
+    // Echte Datenbank, falls auf diesem Rechner vorhanden
+    java.io.File("/home/claude/libretro/libretro-database/rdb/Sega - Mega Drive - Genesis.rdb").takeIf { it.isFile }?.let {
+        val real = RomDb.parse(it.readBytes())
+        eq("RDB echt: Sonic 1", real[0xF9394E97L], "Sonic The Hedgehog (USA, Europe)")
+        check("RDB echt: viele Einträge", real.size > 6000)
+    }
     eq("Match römische Zahl", CoverNames.bestMatch("GOLDEN AXE III (USA).MD", listOf("Golden Axe 3 (USA)", "Golden Axe (USA)")), "Golden Axe 3 (USA)")
     eq("Match Unterstriche", CoverNames.bestMatch("Golden_Axe_2.SMD", listOf("Golden Axe II (World)", "Golden Axe (World)")), "Golden Axe II (World)")
     eq("Match Aladdin Europe", CoverNames.bestMatch("Aladdin (Europe).md", serverList), "Disney's Aladdin (Europe)")

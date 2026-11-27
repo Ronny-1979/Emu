@@ -479,7 +479,8 @@ class MainActivity : Activity() {
         Thread {
             try {
                 val result = CoverDownloader(paths).run(games, false, 40, { _, _, _ -> }, { isFinishing })
-                if (result.found > 0) runOnUiThread { if (!isFinishing) { coverCache.evictAll(); adapter.notifyDataSetChanged() } }
+                if (result.renamed > 0) runOnUiThread { if (!isFinishing) { coverCache.evictAll(); refresh() } }
+                else if (result.found > 0) runOnUiThread { if (!isFinishing) { coverCache.evictAll(); adapter.notifyDataSetChanged() } }
             } catch (t: Throwable) {
                 DiagLog.add("Titelbilder: ${t.javaClass.simpleName}: ${t.message}")
             } finally {

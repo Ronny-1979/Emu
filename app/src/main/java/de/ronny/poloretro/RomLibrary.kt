@@ -22,7 +22,7 @@ data class Game(
 }
 
 /** Wo die App Dateien ablegt. Alles liegt im privaten App-Speicher. */
-class AppPaths(private val context: Context) {
+class AppPaths(val context: Context) {
     val romDir: File get() = File(context.filesDir, "roms").apply { mkdirs() }
 
     /** App-Ordner auf dem Gerätespeicher, in den man per Dateimanager/MTP ROMs legen kann. */
@@ -145,7 +145,27 @@ class RomLibrary(private val context: Context) {
 
     private fun systemOf(file: File): RetroSystem? {
         if (RomNames.isZip(file.name)) return zipSystem(file)
-        return RomNames.systemFor(file.name)
+        val byExt = RomNames.systemFor(file.name) ?: return null
+        if (byExt != RetroSystem.MEGADRIVE && byExt != RetroSystem.MASTERSYSTEM && byExt != RetroSystem.GAMEGEAR) return byExt
+        val key = file.absolutePath + "|" + file.length() + "|" + file.lastModified()
+        synchronized(sniffCache) { sniffCache[key]?.let { return it } }
+        val header = try {
+            file.inputStream().use { input ->
+                val buf = ByteArray(RomSniffer.HEADER_BYTES)
+                var n = 0
+                while (n < buf.size) {
+                    val r = input.read(buf, n, buf.size - n)
+                    if (r <= 0) break
+                    n += r
+                }
+                buf.copyOf(n)
+            }
+        } catch (_: Exception) {
+            return byExt
+        }
+        val system = RomSniffer.refine(byExt, header)
+        synchronized(sniffCache) { sniffCache[key] = system }
+        return system
     }
 
     private fun zipSystem(file: File): RetroSystem? {
@@ -186,6 +206,7 @@ class RomLibrary(private val context: Context) {
 
     companion object {
         private val zipCache = HashMap<String, RetroSystem?>()
+        private val sniffCache = HashMap<String, RetroSystem>()
 
         /** Ordner, in denen nie ROMs liegen (System-, Papierkorb- und Sicherungsordner). */
         private val SKIP_DIRS = setOf("android", "lost.dir", "system volume information", "\$recycle.bin", "backup", "saves")
