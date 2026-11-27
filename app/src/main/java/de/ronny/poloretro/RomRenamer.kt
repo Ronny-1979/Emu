@@ -34,10 +34,10 @@ class RomRenamer(private val paths: AppPaths, private val prefs: Prefs) {
         val file = g.file
         if (!file.isFile || file.length() <= 0 || file.length() > RomDb.MAX_ROM_BYTES || !inAppFolder(file)) return null
         val hit = RomId.identify(file, db) ?: return null
-        // Verschränkte .smd-Dateien bleiben unter ihrem Namen (nur das Titelbild wird über die Prüfsumme gefunden).
-        if (!hit.plain) return null
         val name = hit.name
-        val desired = CoverNames.fileName(name) + "." + g.system.extensions.first()
+        // Glatte ROMs bekommen die übliche Endung; verschränkte .smd-Dateien behalten ihre Endung, weil der Inhalt so bleibt.
+        val ext = if (hit.plain) g.system.extensions.first() else RomNames.extension(file.name).ifEmpty { "smd" }
+        val desired = CoverNames.fileName(name) + "." + ext
         if (desired == file.name) return null
         val target = File(file.parentFile, desired)
         if (target.exists()) {

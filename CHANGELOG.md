@@ -1,8 +1,11 @@
 # Änderungen
 
+## 0.5.6
+- Auch verschränkte .smd-Dateien (z. B. marblem.smd) bekommen jetzt den richtigen Namen aus der Datenbank, sie behalten die Endung .smd.
+
 ## 0.5.5
 - Mega Drive, Master System und Game Gear werden jetzt am Inhalt erkannt, nicht nur an der Endung: Ein Master-System-Spiel als ".bin" oder ".md" landet unter Master System. Passt die Endung nicht, bekommt der Core eine Kopie mit der richtigen Endung (er erkennt die Konsole daran).
-- Spiele auf dem Radio werden per Prüfsumme (CRC32) mit der libretro-Datenbank verglichen und bei einem exakten Treffer automatisch richtig benannt (z. B. SONIC1.BIN wird "Sonic The Hedgehog (USA, Europe).md"). Spielstände, Titelbilder, Favoriten und Spielzeit ziehen mit um. Dateien auf dem USB-Stick werden nie umbenannt, ZIP-Dateien und verschränkte .smd-Dateien bleiben unter ihrem Namen. Die Datenbank wird beim Titelbild-Lauf geladen (einmalig, danach 90 Tage gemerkt).
+- Spiele auf dem Radio werden per Prüfsumme (CRC32) mit der libretro-Datenbank verglichen und bei einem exakten Treffer automatisch richtig benannt (z. B. SONIC1.BIN wird "Sonic The Hedgehog (USA, Europe).md"). Spielstände, Titelbilder, Favoriten und Spielzeit ziehen mit um. Dateien auf dem USB-Stick werden nie umbenannt, ZIP-Dateien bleiben unter ihrem Namen. Die Datenbank wird beim Titelbild-Lauf geladen (einmalig, danach 90 Tage gemerkt).
 - Titelbilder für diese Konsolen nutzen den Namen aus der Datenbank, auch bei .smd-Dateien und Spielen auf dem Stick.
 - Die Schalter "Audiofokus anfordern" und "Schneller Audiomodus" sind aus den Einstellungen entfernt: Audiofokus ist immer an, der schnelle Audiomodus immer aus.
 
