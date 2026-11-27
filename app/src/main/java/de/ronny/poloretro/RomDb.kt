@@ -9,6 +9,9 @@ import java.util.zip.CRC32
  *
  * Aufbau: "RARCHDB\0", 8 Byte Länge des Datenteils, dann je Spiel ein MessagePack-Eintrag (Name, Größe, CRC, MD5, SHA1 ...).
  */
+/** Inhalt einer Datenbank: Prüfsumme -> Name, und (wo vorhanden) Produktnummer -> Namen. */
+class RomDbData(val crc: Map<Long, String>, val serial: Map<String, List<String>>)
+
 object RomDb {
     /** Alle Konsolen der App haben eine Datenbank (Dateiname = Ordnername der Titelbilder). */
     val SYSTEMS: Set<RetroSystem> = RetroSystem.values().toSet()
@@ -16,10 +19,17 @@ object RomDb {
     /** Größere Dateien werden nicht geprüft. N64-Spiele sind bis 64 MB groß, alles andere höchstens ein paar MB. */
     fun maxBytes(system: RetroSystem): Long = if (system == RetroSystem.N64) 100L * 1024 * 1024 else 16L * 1024 * 1024
 
+    /** Produktnummer so umschreiben, dass Kopf-Schreibweise und Datenbank-Schreibweise gleich werden (T-048286-00 = T-48286-00). */
+    fun normSerial(s: String): String =
+        s.uppercase().replace(" ", "").replace(Regex("[^A-Z0-9-]"), "").replace(Regex("^T-0+"), "T-")
+
     /** CRC32 -> Spielname. Leer, wenn die Datei kein gültiges RDB ist. */
-    fun parse(data: ByteArray): Map<Long, String> {
+    fun parse(data: ByteArray): Map<Long, String> = parseFull(data).crc
+
+    fun parseFull(data: ByteArray): RomDbData {
         val out = HashMap<Long, String>()
-        if (data.size < 16 || String(data, 0, 7, Charsets.US_ASCII) != "RARCHDB") return out
+        val serials = HashMap<String, MutableList<String>>()
+        if (data.size < 16 || String(data, 0, 7, Charsets.US_ASCII) != "RARCHDB") return RomDbData(out, serials)
         var end = 0L
         for (i in 8 until 16) end = (end shl 8) or (data[i].toLong() and 0xFF)
         val limit = if (end in 17..data.size.toLong()) end.toInt() else data.size
@@ -34,13 +44,16 @@ object RomDb {
                         var c = 0L
                         for (b in crc) c = (c shl 8) or (b.toLong() and 0xFF)
                         out.putIfAbsent(c, name)
+                        val serial = e["serial"]
+                        val sText = when (serial) { is String -> serial; is ByteArray -> String(serial, Charsets.US_ASCII); else -> null }
+                        if (sText != null && sText.isNotBlank()) serials.getOrPut(normSerial(sText)) { ArrayList() }.add(name)
                     }
                 }
             }
         } catch (_: Exception) {
             // Beschädigtes Ende: was bis hier gelesen wurde, bleibt gültig.
         }
-        return out
+        return RomDbData(out, serials)
     }
 
     /** CRC32 der Datei, die ersten [skip] Bytes (Kopfteil) werden übersprungen. */
@@ -125,9 +138,10 @@ object RomId {
      * Richtiger Name. [canonicalExt] ist true, wenn die Datei auf die übliche Endung der Konsole umbenannt werden darf
      * (glatte Sega-ROMs); sonst bleibt die Endung, weil sie zum Inhalt gehört (.smd, .sfc/.smc, N64-Byte-Reihenfolge).
      */
-    class Hit(val name: String, val canonicalExt: Boolean)
+    class Hit(val name: String, val canonicalExt: Boolean, val exact: Boolean = true)
 
-    fun identify(file: File, db: Map<Long, String>, system: RetroSystem): Hit? {
+    fun identify(file: File, dbData: RomDbData, system: RetroSystem): Hit? {
+        val db = dbData.crc
         val size = file.length()
         if (!file.isFile || size <= 0 || size > RomDb.maxBytes(system)) return null
         // 1. Datei so, wie sie ist (No-Intro-Prüfsummen; bei N64 stehen alle drei Byte-Reihenfolgen in der Datenbank).
@@ -142,10 +156,50 @@ object RomId {
             RetroSystem.MEGADRIVE -> {
                 val crc = if (size <= 8L * 1024 * 1024) smdCrc(file) else null
                 if (crc != null) db[crc]?.let { return Hit(it, false) }
+                // 3. Prüfsumme passt nicht (geänderter oder fehlerhafter Dump): die Produktnummer im ROM-Kopf nennt das Spiel trotzdem.
+                serialName(file, dbData)?.let { return Hit(it, false, exact = false) }
             }
             else -> {}
         }
         return null
+    }
+
+    /** Namen mit diesen Zusätzen sind keine Standardfassung (Fassungen aus Sammlungen, Betas, Hacks, Übersetzungen ...). */
+    private val NON_STANDARD = Regex("\\[|beta|proto|demo|sample|unl|pirate|hack|kiosk|promo|collection|compilation|virtual console|switch online|steam|classics|mini|channel|gamecube|aftermarket|wii", RegexOption.IGNORE_CASE)
+
+    /** Name zur Produktnummer im Kopf, nur wenn es genau eine Standardfassung dazu gibt. */
+    fun serialName(file: File, db: RomDbData): String? {
+        val header = megaDriveHeader(file) ?: return null
+        val raw = String(header, 0x180, 14, Charsets.US_ASCII)
+        val serial = RomDb.normSerial(raw.trim().removePrefix("GM").removePrefix("OS").trim())
+        if (serial.length < 4) return null
+        val names = db.serial[serial]?.filter { !NON_STANDARD.containsMatchIn(it) }?.distinct() ?: return null
+        return if (names.size == 1) names[0] else null
+    }
+
+    /** Die ersten 512 Bytes der Mega-Drive-ROM, bei .smd-Dateien nach dem Entschränken. */
+    fun megaDriveHeader(file: File): ByteArray? = try {
+        file.inputStream().use { input ->
+            val buf = ByteArray(512 + 16384)
+            var n = 0
+            while (n < buf.size) {
+                val r = input.read(buf, n, buf.size - n)
+                if (r <= 0) break
+                n += r
+            }
+            when {
+                n >= 0x200 && String(buf, 0x100, 4, Charsets.US_ASCII) == "SEGA" -> buf.copyOf(0x200)
+                n >= 0x200 && String(buf, 0x101, 4, Charsets.US_ASCII) == "SEGA" -> buf.copyOf(0x200)
+                n >= buf.size && buf[8] == 0xAA.toByte() && buf[9] == 0xBB.toByte() -> {
+                    val out = ByteArray(0x200)
+                    for (j in 0 until 0x100) { out[2 * j + 1] = buf[512 + j]; out[2 * j] = buf[512 + 8192 + j] }
+                    out
+                }
+                else -> null
+            }
+        }
+    } catch (_: Exception) {
+        null
     }
 
     private fun hasInesHeader(file: File): Boolean = try {

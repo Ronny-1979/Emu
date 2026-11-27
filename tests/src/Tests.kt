@@ -303,16 +303,28 @@ fun main() {
         val rom = ByteArray(2048) { i -> ((i * 13 + 5) and 0xFF).toByte() }
         fun crcOf(b: ByteArray) = java.util.zip.CRC32().also { it.update(b) }.value
         val snes = File(dir, "x.smc").also { it.writeBytes(ByteArray(512) + rom) }
-        val h1 = RomId.identify(snes, mapOf(crcOf(rom) to "Testspiel (Europe)"), RetroSystem.SNES)
+        val h1 = RomId.identify(snes, RomDbData(mapOf(crcOf(rom) to "Testspiel (Europe)"), emptyMap()), RetroSystem.SNES)
         eq("SNES Vorspann", h1?.name, "Testspiel (Europe)")
         eq("SNES Endung bleibt", h1?.canonicalExt, false)
         val ines = byteArrayOf('N'.code.toByte(), 'E'.code.toByte(), 'S'.code.toByte(), 0x1A) + ByteArray(12)
         val nes = File(dir, "y.nes").also { it.writeBytes(ines + rom) }
-        eq("NES ohne Kopf", RomId.identify(nes, mapOf(crcOf(rom) to "Nes Spiel (USA)"), RetroSystem.NES)?.name, "Nes Spiel (USA)")
-        eq("NES mit Kopf", RomId.identify(nes, mapOf(crcOf(ines + rom) to "Nes Spiel (USA)"), RetroSystem.NES)?.name, "Nes Spiel (USA)")
+        eq("NES ohne Kopf", RomId.identify(nes, RomDbData(mapOf(crcOf(rom) to "Nes Spiel (USA)"), emptyMap()), RetroSystem.NES)?.name, "Nes Spiel (USA)")
+        eq("NES mit Kopf", RomId.identify(nes, RomDbData(mapOf(crcOf(ines + rom) to "Nes Spiel (USA)"), emptyMap()), RetroSystem.NES)?.name, "Nes Spiel (USA)")
         val md = File(dir, "z.bin").also { it.writeBytes(rom) }
-        eq("MD glatt", RomId.identify(md, mapOf(crcOf(rom) to "Mega Spiel (World)"), RetroSystem.MEGADRIVE)?.canonicalExt, true)
-        eq("Unbekannt", RomId.identify(md, mapOf(1L to "Anderes"), RetroSystem.MEGADRIVE), null)
+        eq("MD glatt", RomId.identify(md, RomDbData(mapOf(crcOf(rom) to "Mega Spiel (World)"), emptyMap()), RetroSystem.MEGADRIVE)?.canonicalExt, true)
+        eq("Unbekannt", RomId.identify(md, RomDbData(mapOf(1L to "Anderes"), emptyMap()), RetroSystem.MEGADRIVE), null)
+        // Produktnummer im Kopf: falsche Prüfsumme, aber richtige Nummer
+        val hdr = ByteArray(2048)
+        "SEGA MEGA DRIVE".toByteArray().copyInto(hdr, 0x100)
+        "GM T-107036-00".toByteArray().copyInto(hdr, 0x180)
+        val bad = File(dir, "j.md").also { it.writeBytes(hdr) }
+        val sdb = RomDbData(mapOf(1L to "x"), mapOf(RomDb.normSerial("T-107036-00") to listOf("Jim Power - The Lost Dimension in 3D (World)", "Jim Power (World)[h]", "Jim Power (World) (Proto)")))
+        eq("Produktnummer eindeutig", RomId.identify(bad, sdb, RetroSystem.MEGADRIVE)?.name, "Jim Power - The Lost Dimension in 3D (World)")
+        eq("Produktnummer nicht exakt", RomId.identify(bad, sdb, RetroSystem.MEGADRIVE)?.exact, false)
+        val sdb2 = RomDbData(mapOf(1L to "x"), mapOf("T-107036-00" to listOf("A (USA)", "B (USA)")))
+        eq("Produktnummer mehrdeutig", RomId.identify(bad, sdb2, RetroSystem.MEGADRIVE), null)
+        eq("Nummer T-0 normal", RomDb.normSerial("T-048286-00"), RomDb.normSerial("T-48286-00"))
+        eq("Nummer mit Leerzeichen", RomDb.normSerial("MK-1118 -00"), "MK-1118-00")
         dir.deleteRecursively()
     }
     eq("Match römische Zahl", CoverNames.bestMatch("GOLDEN AXE III (USA).MD", listOf("Golden Axe 3 (USA)", "Golden Axe (USA)")), "Golden Axe 3 (USA)")

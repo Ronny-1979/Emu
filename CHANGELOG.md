@@ -1,5 +1,8 @@
 # Änderungen
 
+## 0.5.8
+- Mega Drive: Passt die Prüfsumme nicht (geänderter oder fehlerhafter Dump), erkennt die App das Spiel über die Produktnummer im ROM-Kopf, auch bei .smd-Dateien. Es zählt nur, wenn es genau eine Standardfassung dazu gibt (keine Betas, Hacks, Sammlungen). Das Protokoll nennt den Weg (Prüfsumme oder Produktnummer).
+
 ## 0.5.7
 - Das richtige Benennen per Prüfsumme gilt jetzt für alle Konsolen (SNES, NES, N64, Game Boy, GBC, GBA, Mega Drive, Master System, Game Gear). SNES-Dateien mit Kopierer-Vorspann und NES-Dateien mit iNES-Kopf werden auch erkannt, N64 in allen drei Byte-Reihenfolgen. Die Endung bleibt, außer bei glatten Sega-ROMs. Schon geprüfte Dateien werden gemerkt und nicht bei jedem Lauf neu gerechnet.
 

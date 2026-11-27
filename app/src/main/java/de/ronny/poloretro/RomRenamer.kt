@@ -16,10 +16,10 @@ class RomRenamer(private val paths: AppPaths, private val prefs: Prefs) {
     }
 
     /** Liefert die Spieleliste mit den neuen Dateinamen; [renamed] zählt die umbenannten Spiele. */
-    fun renameAll(games: List<Game>, dbFor: (RetroSystem) -> Map<Long, String>?, cancelled: () -> Boolean): Pair<List<Game>, Int> {
+    fun renameAll(games: List<Game>, dbFor: (RetroSystem) -> RomDbData?, cancelled: () -> Boolean): Pair<List<Game>, Int> {
         var renamed = 0
         val out = ArrayList<Game>(games.size)
-        val dbs = HashMap<RetroSystem, Map<Long, String>?>()
+        val dbs = HashMap<RetroSystem, RomDbData?>()
         val checked = loadChecked()
         var changed = false
         for (g in games) {
@@ -29,7 +29,7 @@ class RomRenamer(private val paths: AppPaths, private val prefs: Prefs) {
             val db = dbs.getOrPut(g.system) { dbFor(g.system) }
             val updated = try { renameOne(g, db) } catch (_: Exception) { null }
             // Nur merken, wenn die Datenbank da war: ohne Datenbank wird beim nächsten Mal noch einmal geprüft.
-            if (db != null && db.isNotEmpty() && g.available && !g.external) {
+            if (db != null && db.crc.isNotEmpty() && g.available && !g.external) {
                 val k = checkKey(updated?.file ?: g.file)
                 if (k != null) { checked.add(k); changed = true }
             }
@@ -55,8 +55,8 @@ class RomRenamer(private val paths: AppPaths, private val prefs: Prefs) {
         try { checkedFile.writeText(set.joinToString("\n")) } catch (_: Exception) { /* nicht schlimm */ }
     }
 
-    private fun renameOne(g: Game, db: Map<Long, String>?): Game? {
-        if (db == null || db.isEmpty()) return null
+    private fun renameOne(g: Game, db: RomDbData?): Game? {
+        if (db == null || db.crc.isEmpty()) return null
         if (!g.available || g.external || RomNames.isZip(g.file.name)) return null
         val file = g.file
         if (!file.isFile || file.length() <= 0 || !inAppFolder(file)) return null
@@ -73,7 +73,7 @@ class RomRenamer(private val paths: AppPaths, private val prefs: Prefs) {
         }
         if (!file.renameTo(target)) return null
         migrate(g, file.name, target)
-        DiagLog.add("Umbenannt: \"${file.name}\" -> \"${target.name}\"")
+        DiagLog.add("Umbenannt: \"${file.name}\" -> \"${target.name}\"" + if (hit.exact) "" else " (über Produktnummer im ROM-Kopf)")
         return g.copy(file = target, title = RomNames.title(target.name))
     }
 

@@ -73,7 +73,7 @@ class CoverDownloader(private val paths: AppPaths) {
             // Sega-Spiele: Der Name aus der Datenbank (per Prüfsumme) ist genauer als der Dateiname.
             val exact = try { romDb(game.system)?.let { RomId.identify(game.file, it, game.system) } } catch (_: Exception) { null }
             val coverName = if (exact != null) exact.name + "." + game.system.extensions.first() else game.file.name
-            if (exact != null && exact.name != game.file.name.substringBeforeLast('.')) DiagLog.add("Titelbild: \"${game.file.name}\" erkannt als \"${exact.name}\" (Prüfsumme)")
+            if (exact != null && exact.name != game.file.name.substringBeforeLast('.')) DiagLog.add("Titelbild: \"${game.file.name}\" erkannt als \"${exact.name}\"" + if (exact.exact) " (Prüfsumme)" else " (Produktnummer)")
             for (url in CoverNames.candidates(game.system, coverName)) {
                 if (cancelled()) break
                 when (fetch(url, File(paths.coverDirFor(game.system), game.saveKey + ".png"))) {
@@ -119,32 +119,32 @@ class CoverDownloader(private val paths: AppPaths) {
         return Result(found, notFound, errors, alreadyThere, wasCancelled, renamedCount)
     }
 
-    private val rdbCache = HashMap<RetroSystem, Map<Long, String>?>()
+    private val rdbCache = HashMap<RetroSystem, RomDbData?>()
 
     /** Namen und Prüfsummen der Konsole aus der libretro-Datenbank (einmal geladen, 90 Tage gemerkt). Null ohne Netz und ohne Zwischenspeicher. */
-    fun romDb(system: RetroSystem): Map<Long, String>? {
+    fun romDb(system: RetroSystem): RomDbData? {
         return rdbCache.getOrPut(system) { loadRomDb(system) }
     }
 
-    private fun loadRomDb(system: RetroSystem): Map<Long, String>? {
+    private fun loadRomDb(system: RetroSystem): RomDbData? {
         val cache = File(paths.coverDirFor(system), ".rdb")
-        val cached = try { if (cache.isFile) RomDb.parse(cache.readBytes()) else emptyMap() } catch (_: Exception) { emptyMap() }
+        val cached = try { if (cache.isFile) RomDb.parseFull(cache.readBytes()) else null } catch (_: Exception) { null }
         val fresh = cache.isFile && System.currentTimeMillis() - cache.lastModified() < 90L * 24 * 3600 * 1000
-        if (fresh && cached.isNotEmpty()) return cached
+        if (fresh && cached != null && cached.crc.isNotEmpty()) return cached
         val url = "https://raw.githubusercontent.com/libretro/libretro-database/master/rdb/" +
             java.net.URLEncoder.encode(system.thumbFolder, "UTF-8").replace("+", "%20") + ".rdb"
         val r = get(url, 16_000_000)
         val bytes = r.bytes
         if (r.code == 200 && bytes != null) {
-            val map = RomDb.parse(bytes)
-            if (map.isNotEmpty()) {
+            val map = RomDb.parseFull(bytes)
+            if (map.crc.isNotEmpty()) {
                 try { cache.writeBytes(bytes) } catch (_: Exception) { /* egal */ }
-                DiagLog.add("Datenbank ${system.shortLabel}: ${map.size} Spiele")
+                DiagLog.add("Datenbank ${system.shortLabel}: ${map.crc.size} Spiele")
                 return map
             }
         }
         DiagLog.add("Datenbank ${system.shortLabel} nicht ladbar (HTTP ${r.code})")
-        return cached.ifEmpty { null }
+        return cached?.takeIf { it.crc.isNotEmpty() }
     }
 
     private var netErrorsLogged = 0
